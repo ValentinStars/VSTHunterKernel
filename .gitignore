@@ -146,3 +146,9 @@ AnyKernel3/Image
 build_status.txt
 .scmversion
 
+# Allow firmware blobs in /firmware
+!/firmware/**/*.bin
+!/firmware/**/*.fw
+!/firmware/**/*.ihex
+
+
