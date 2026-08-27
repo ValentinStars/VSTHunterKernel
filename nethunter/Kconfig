@@ -16,7 +16,7 @@ config NETHUNTER_SUPPORT
 
 	select MODULE_UNLOAD
 
-	select MODVERSIONS
+	# select MODVERSIONS
 
 	select MMC
 

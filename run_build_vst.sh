@@ -19,6 +19,7 @@ echo "=== VSTHunterKernel (VSTnh) Alpha3 Build Started: $(date) ===" > "$LOGFILE
 mkdir -p "$OUTDIR"
 echo "=== Generating defconfig for Alpha3 ===" >> "$LOGFILE"
 make O="$OUTDIR" ARCH=arm64 HOSTCC=clang HOSTCXX=clang++ CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 vstnh_defconfig >> "$LOGFILE" 2>&1
+make O="$OUTDIR" ARCH=arm64 HOSTCC=clang HOSTCXX=clang++ CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 olddefconfig >> "$LOGFILE" 2>&1
 
 # Build Image
 echo "=== Compiling Kernel Image ===" >> "$LOGFILE"
