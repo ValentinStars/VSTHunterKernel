@@ -19,8 +19,8 @@ create_base_module() {
     cat << MEOF > "$mod_dir/module.prop"
 id=$id
 name=$name
-version=v2.0-Alpha3.1
-versionCode=310
+version=v2.0-Alpha3.1-Hotfix
+versionCode=311
 author=Valentin Stars (vstbio.t.me)
 description=$desc
 MEOF
@@ -115,6 +115,11 @@ chmod 755 "$MOD2/system/bin/vst-wg"
 MOD3="$BASE_DIR/03_VST_Wireless_Pentest_Arsenal"
 create_base_module "$MOD3" "vst-wireless" "VST Wireless Pentest Firmware & Toolkit" "Installs firmware for RTL8812AU, RTL8814AU, ATH9K, RTL8188EU with 'vst-wifi' monitor-mode CLI tool."
 mkdir -p "$MOD3/system/etc/firmware"
+if [ -d "/run/media/valentin_stars/linux/VST_Magisk_Pack/03_VST_Wireless_Pentest_Arsenal/system/etc/firmware" ]; then
+    cp -r /run/media/valentin_stars/linux/VST_Magisk_Pack/03_VST_Wireless_Pentest_Arsenal/system/etc/firmware/* "$MOD3/system/etc/firmware/" 2>/dev/null || true
+elif [ -d "$TOPDIR/firmware" ]; then
+    cp -r "$TOPDIR"/firmware/* "$MOD3/system/etc/firmware/" 2>/dev/null || true
+fi
 
 cat << 'BEOF' > "$MOD3/system/bin/vst-wifi"
 #!/system/bin/sh
@@ -199,18 +204,18 @@ chmod 755 "$MOD5/system/bin/vst-can"
 
 # --- Module 6: hakirfon Edition Branding ---
 MOD6="$BASE_DIR/06_VST_hakirfon_Edition_SystemProp"
-create_base_module "$MOD6" "vst-hakirfon-branding" "VST hakirfon Edition System Branding" "Spoofs Android Device Model to 'hakirfon', Build ID to 'hakirfon Alpha3.1 - Valentin Stars' and applies performance tweaks."
+create_base_module "$MOD6" "vst-hakirfon-branding" "VST hakirfon Edition System Branding" "Spoofs Android Device Model to 'hakirfon', Build ID to 'hakirfon Alpha3.1-Hotfix - Valentin Stars' and applies performance tweaks."
 cat << 'PEOF' > "$MOD6/system.prop"
 ro.product.model=hakirfon
 ro.product.brand=hakirfon
 ro.product.name=hakirfon
 ro.product.device=a51
 ro.product.manufacturer=ValentinStars
-ro.build.display.id=hakirfon Alpha3.1 - Valentin Stars
-ro.build.id=hakirfon-Alpha3.1
-ro.system.build.id=hakirfon-Alpha3.1
-ro.build.version.incremental=hakirfon.Alpha3.1
-ro.vendor.build.id=hakirfon-Alpha3.1
+ro.build.display.id=hakirfon Alpha3.1-Hotfix - Valentin Stars
+ro.build.id=hakirfon-Alpha3.1-Hotfix
+ro.system.build.id=hakirfon-Alpha3.1-Hotfix
+ro.build.version.incremental=hakirfon.Alpha3.1.Hotfix
+ro.vendor.build.id=hakirfon-Alpha3.1-Hotfix
 ro.boot.hardware=hakirfon
 PEOF
 

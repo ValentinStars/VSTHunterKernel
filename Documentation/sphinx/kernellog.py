@@ -13,16 +13,20 @@ if sphinx.__version__[:3] >= '1.6':
 else:
     UseLogging = False
 
-def warn(app, message):
+def warn(app, message=None):
+    if message is None:
+        message = app
     if UseLogging:
         logger.warning(message)
-    else:
+    elif app is not None and hasattr(app, 'warn'):
         app.warn(message)
 
-def verbose(app, message):
+def verbose(app, message=None):
+    if message is None:
+        message = app
     if UseLogging:
         logger.verbose(message)
-    else:
+    elif app is not None and hasattr(app, 'verbose'):
         app.verbose(message)
 
 

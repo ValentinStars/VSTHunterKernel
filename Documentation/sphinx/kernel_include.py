@@ -34,7 +34,10 @@ u"""
 import os.path
 
 from docutils import io, nodes, statemachine
-from docutils.utils.error_reporting import SafeString, ErrorString
+try:
+    from docutils.utils.error_reporting import SafeString, ErrorString
+except ImportError:
+    SafeString = ErrorString = str
 from docutils.parsers.rst import directives
 from docutils.parsers.rst.directives.body import CodeBlock, NumberLines
 from docutils.parsers.rst.directives.misc import Include

@@ -31,10 +31,9 @@ from load_config import loadConfig
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.3'
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
-extensions = ['kerneldoc', 'rstFlatTable', 'kernel_include', 'cdomain', 'kfigure']
+extensions = ['kerneldoc', 'rstFlatTable', 'kernel_include', 'kfigure']
+if major < 3:
+    extensions.append('cdomain')
 
 # The name of the math extension changed on Sphinx 1.4
 if (major == 1 and minor > 3) or (major > 1):
