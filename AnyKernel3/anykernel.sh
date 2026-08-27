@@ -43,10 +43,6 @@ PATCH_VBMETA_FLAG=auto;
 # boot install
 split_boot;
 
-# patch boot image cmdline for Framebuffer Console and Panic display
-patch_cmdline "console=" "console=tty0";
-patch_cmdline "panic=" "panic=0";
-
 ui_print "- Installing VSTHunterKernel (VSTnh)...";
 flash_boot;
 ## end boot install
