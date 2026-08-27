@@ -19,8 +19,8 @@ create_base_module() {
     cat << MEOF > "$mod_dir/module.prop"
 id=$id
 name=$name
-version=v2.0-Alpha2
-versionCode=200
+version=v2.0-Alpha3.1
+versionCode=310
 author=Valentin Stars (vstbio.t.me)
 description=$desc
 MEOF
@@ -173,6 +173,9 @@ chmod 755 "$MOD4/system/bin/vst-sdr"
 MOD5="$BASE_DIR/05_VST_Hardware_Hacking_CAN"
 create_base_module "$MOD5" "vst-hardware-can" "VST Hardware Hacking & SocketCAN Pack" "Auto-configures CDC-ACM for Flipper Zero, Proxmark3, Chameleon, FTDI, CP210x and SocketCAN with 'vst-can' helper."
 mkdir -p "$MOD5/system/lib/modules"
+if [ -f "$TOPDIR/out_alpha3/drivers/net/can/slcan.ko" ]; then
+    cp "$TOPDIR/out_alpha3/drivers/net/can/slcan.ko" "$MOD5/system/lib/modules/slcan.ko"
+fi
 
 cat << 'SEOF' > "$MOD5/service.sh"
 #!/system/bin/sh
@@ -196,18 +199,18 @@ chmod 755 "$MOD5/system/bin/vst-can"
 
 # --- Module 6: hakirfon Edition Branding ---
 MOD6="$BASE_DIR/06_VST_hakirfon_Edition_SystemProp"
-create_base_module "$MOD6" "vst-hakirfon-branding" "VST hakirfon Edition System Branding" "Spoofs Android Device Model to 'hakirfon', Build ID to 'hakirfon Alpha2 - Valentin Stars' and applies performance tweaks."
+create_base_module "$MOD6" "vst-hakirfon-branding" "VST hakirfon Edition System Branding" "Spoofs Android Device Model to 'hakirfon', Build ID to 'hakirfon Alpha3.1 - Valentin Stars' and applies performance tweaks."
 cat << 'PEOF' > "$MOD6/system.prop"
 ro.product.model=hakirfon
 ro.product.brand=hakirfon
 ro.product.name=hakirfon
 ro.product.device=a51
 ro.product.manufacturer=ValentinStars
-ro.build.display.id=hakirfon Alpha2 - Valentin Stars
-ro.build.id=hakirfon-Alpha2
-ro.system.build.id=hakirfon-Alpha2
-ro.build.version.incremental=hakirfon.Alpha2
-ro.vendor.build.id=hakirfon-Alpha2
+ro.build.display.id=hakirfon Alpha3.1 - Valentin Stars
+ro.build.id=hakirfon-Alpha3.1
+ro.system.build.id=hakirfon-Alpha3.1
+ro.build.version.incremental=hakirfon.Alpha3.1
+ro.vendor.build.id=hakirfon-Alpha3.1
 ro.boot.hardware=hakirfon
 PEOF
 
