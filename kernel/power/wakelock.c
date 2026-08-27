@@ -217,6 +217,12 @@ int pm_wake_lock(const char *buf)
 	if (!len)
 		return -EINVAL;
 
+	/* VSTHunter: Block parasitic wakelocks that prevent Deep Sleep */
+	if ((len == 13 && !strncmp(buf, "ssp_wake_lock", 13)) ||
+	    (len == 19 && !strncmp(buf, "sec-battery-monitor", 19))) {
+		return 0; /* Silently ignore without holding CPU awake */
+	}
+
 	if (*str && *str != '\n') {
 		/* Find out if there's a valid timeout string appended. */
 		ret = kstrtou64(skip_spaces(str), 10, &timeout_ns);

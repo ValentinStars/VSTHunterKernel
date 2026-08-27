@@ -19,8 +19,8 @@ create_base_module() {
     cat << MEOF > "$mod_dir/module.prop"
 id=$id
 name=$name
-version=v2.0-Alpha3.1-Hotfix
-versionCode=311
+version=v2.0-Alpha4
+versionCode=400
 author=Valentin Stars (vstbio.t.me)
 description=$desc
 MEOF

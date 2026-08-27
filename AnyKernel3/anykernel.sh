@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=VSTHunterKernel (VSTnh) Alpha3.1-Hotfix by Valentin Stars
+kernel.string=VSTHunterKernel (VSTnh) Alpha4 by Valentin Stars
 do.devicecheck=1
 do.modules=0
 do.systemless=1

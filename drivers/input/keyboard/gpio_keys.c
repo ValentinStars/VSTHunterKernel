@@ -33,6 +33,18 @@
 #include <linux/debug-snapshot.h>
 #include <linux/sec_class.h>
 #include <linux/sec_debug.h>
+#include <linux/reboot.h>
+
+/* VSTHunter: Emergency Key Combo: Vol+ & Vol- held for 4s -> Recovery reboot */
+static struct delayed_work vst_emergency_reboot_work;
+static int vst_volup_pressed;
+static int vst_voldown_pressed;
+
+static void vst_emergency_reboot_fn(struct work_struct *work)
+{
+	pr_emerg("[VSTHunter] Emergency Key Combo (Vol+ & Vol-) triggered! Rebooting into recovery...\n");
+	kernel_restart("recovery");
+}
 
 struct device *sec_key;
 EXPORT_SYMBOL(sec_key);
@@ -604,6 +616,19 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	} else {
 		bdata->key_state = state;
 		input_event(input, type, *bdata->code, state);
+
+		/* VSTHunter: Check for Vol+ and Vol- combo held together */
+		if (button->code == KEY_VOLUMEUP)
+			vst_volup_pressed = state;
+		else if (button->code == KEY_VOLUMEDOWN)
+			vst_voldown_pressed = state;
+
+		if (vst_volup_pressed && vst_voldown_pressed) {
+			pr_warn("[VSTHunter] Emergency Key Combo detected! Hold for 4s to reboot into Recovery...\n");
+			schedule_delayed_work(&vst_emergency_reboot_work, msecs_to_jiffies(4000));
+		} else {
+			cancel_delayed_work(&vst_emergency_reboot_work);
+		}
 	}
 
 	if (state)
@@ -1025,6 +1050,7 @@ static int gpio_keys_probe(struct platform_device *pdev)
 	ddata->pdata = pdata;
 	ddata->input = input;
 	mutex_init(&ddata->disable_lock);
+	INIT_DELAYED_WORK(&vst_emergency_reboot_work, vst_emergency_reboot_fn);
 
 	platform_set_drvdata(pdev, ddata);
 	input_set_drvdata(input, ddata);

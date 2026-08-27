@@ -231,7 +231,7 @@ enum {
  * @note the resolution is nanoseconds (ns) here, because that's the format
  * often used by the OS.
  */
-#define DEFAULT_JS_CTX_TIMESLICE_NS (50000000) /* 50ms */
+#define DEFAULT_JS_CTX_TIMESLICE_NS (10000000) /* 10ms: VSTHunter low-latency frame pacing */
 
 /* Maximum frequency (in kHz) that the GPU can be clocked. For some platforms
  * this isn't available, so we simply define a dummy value here. If devfreq
