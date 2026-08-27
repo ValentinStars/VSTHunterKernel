@@ -41,8 +41,9 @@ make -j$(nproc 2>/dev/null || echo 4) O="$OUTDIR" ARCH=arm64 HOSTCC=clang HOSTCX
 echo "=== Packaging AnyKernel3 Flashable Zip ===" >> "$LOGFILE"
 cp "$OUTDIR/arch/arm64/boot/Image" AnyKernel3/Image
 cd AnyKernel3
-ZIP_NAME="VSTHunterKernel-A51-NetHunter-VST-Alpha3.zip"
+ZIP_NAME="VSTHunterKernel-A51-NetHunter-VST-Alpha3.1.zip"
 zip -r9 "$OUTDIR/$ZIP_NAME" * -x "*.zip"
+zip -r9 "$OUTDIR/VSTHunterKernel-A51-NetHunter-VST-Alpha3.zip" * -x "*.zip"
 cd "$TOPDIR"
 
 # Copy to SDCARD and FINAL_VST_RELEASE
@@ -50,6 +51,7 @@ mkdir -p "$TOPDIR/FINAL_RELEASE_ALPHA3" "/run/media/valentin_stars/linux/FINAL_V
 cp "$OUTDIR/$ZIP_NAME" "$TOPDIR/FINAL_RELEASE_ALPHA3/" || true
 cp "$OUTDIR/$ZIP_NAME" "/run/media/valentin_stars/linux/FINAL_VST_RELEASE/" || true
 cp "$OUTDIR/$ZIP_NAME" "/run/media/valentin_stars/linux/VSTHunterKernel_GitHub_Release/" || true
+cp "$OUTDIR/VSTHunterKernel-A51-NetHunter-VST-Alpha3.zip" "/run/media/valentin_stars/linux/FINAL_VST_RELEASE/" || true
 
 if [ -d "$SDCARD" ]; then
     cp "$OUTDIR/$ZIP_NAME" "$SDCARD/" || true
