@@ -6181,7 +6181,8 @@ static int sec_bat_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_OTG_CONTROL:
 	case POWER_SUPPLY_PROP_CHARGE_UNO_CONTROL:
-		break;
+		/* Write-only controls: never expose an uninitialised sysfs value. */
+		return -ENODATA;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		val->intval = battery->charge_counter;
 		break;
