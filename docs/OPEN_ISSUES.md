@@ -7,7 +7,7 @@ include ROM/vendor issues as well as kernel code.
 | Area | Current evidence | Next check |
 | --- | --- | --- |
 | Battery autonomy | Passive recorder installed; current sensors report zero; charge_counter is derived from SOC | Cable unplugged normal use/idle cycle, then charging cycle; SOC/temperature/wake/CPU comparison, controlled repeats |
-| SystemUI NetworkTraffic | Fresh log buffer: over 15,000 layout warnings in several minutes while Dozing | Inspect ROM widget onMeasure/visibility/update scheduling; fix layout feedback loop in the matching ROM source/overlay, preserve LiveBoot colors |
+| SystemUI NetworkTraffic | Controlled Dozing test: arrows on produced 1278 layout warnings/12s, arrows off 0/12s; restoring arrows reproduced 448/8s | Compact indicator applied: speed remains enabled, arrows hidden. ROM source patch prepared; compile and test it before restoring arrows |
 | stats daemon | APEX contains a disabled init service, but no daemon was running. Starting through `ctl.start statsd` restored binder `stats`; repeated client waits stopped | Runtime hook starts the declared service on the exact EvolutionX 20260221 build only. Check next boot and longer use; investigate why ROM startup omitted it |
 | Launcher ANR | One focused-window timeout during the latest boot | Read the saved ANR main-thread stack and correlate first unlock, SystemUI load and stats service |
 | Watchdog / offline charging | Original init fatal flags removed; no certified offline charging test | Preserve pstore before reboot; supervised powered-off charging test with hardware recovery available; correlate blocked process/driver |
