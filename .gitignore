@@ -33,6 +33,7 @@
 *.o.*
 *.order
 *.patch
+!tools/rom/*.patch
 *.s
 *.so
 *.so.dbg

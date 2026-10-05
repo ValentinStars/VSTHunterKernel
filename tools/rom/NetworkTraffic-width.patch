@@ -1,0 +1,32 @@
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/NetworkTraffic.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/NetworkTraffic.java
+@@ -525,18 +525,23 @@
+                 && !TextUtils.isEmpty(getText())
+                 && mVisibleState == STATE_ICON;
+ 
+-        if (visible != mVisible) {
+-            mVisible = visible;
+-            setFixedWidth();
+-            setVisibility(mVisible ? View.VISIBLE : View.GONE);
++        boolean active = mEnabled && mIsActive && !TextUtils.isEmpty(getText());
++        mVisible = visible;
++        setFixedWidth();
++        // Overflow must retain its width, or the container will show it again
++        // on its next layout pass and immediately overflow once more.
++        int visibility = active ? (visible ? View.VISIBLE : View.INVISIBLE) : View.GONE;
++        if (getVisibility() != visibility) {
++            setVisibility(visibility);
+         }
+     }
+ 
+     private void setFixedWidth() {
+         int requiredWidth = 0;
+-        if (mVisible && !mHideArrows) {
++        boolean active = mEnabled && mIsActive && !TextUtils.isEmpty(getText());
++        if (active && !mHideArrows) {
+             requiredWidth = (int) (30 * getResources().getDisplayMetrics().density);
+-        } else if (mVisible) {
++        } else if (active) {
+             requiredWidth = (int) (18 * getResources().getDisplayMetrics().density);
+         }
+         if (requiredWidth == mCurrentWidth) return;
