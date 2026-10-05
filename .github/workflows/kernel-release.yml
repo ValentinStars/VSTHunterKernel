@@ -1,0 +1,81 @@
+name: Build A51 kernel and release
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish successful build as a prerelease
+        type: boolean
+        default: true
+      release_tag:
+        description: New tag (leave empty for ci-alpha5-RUN-SHA)
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: a51-manual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    permissions:
+      contents: write
+    env:
+      VST_OUT_DIR: ${{ github.workspace }}/out_alpha5
+      KBUILD_BUILD_USER: VST
+      KBUILD_BUILD_HOST: github-actions
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+      - name: Set toolchain path
+        run: echo "VST_TOOLCHAIN_DIR=$RUNNER_TEMP/neutron-clang-18" >> "$GITHUB_ENV"
+      - name: Validate release request
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -n "$RELEASE_TAG" ]]; then
+            [[ "$RELEASE_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]]
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+              echo 'Tag already exists; choose a new tag.' >&2
+              exit 1
+            fi
+          fi
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev libncurses-dev python3 zstd zip unzip curl rsync
+      - name: Fetch pinned Neutron Clang 18
+        run: bash tools/ci/fetch-toolchain.sh "$VST_TOOLCHAIN_DIR"
+      - name: Build kernel and modules
+        timeout-minutes: 65
+        run: |
+          export KBUILD_BUILD_TIMESTAMP="$(git show -s --format=%cD HEAD)"
+          VST_JOBS="$(nproc)" ./build_kernel.sh 2>&1 | tee kernel-build.log
+          ./build_magisk_modules.sh 2>&1 | tee magisk-build.log
+          python3 tools/ci/package-release.py
+          (cd "$VST_OUT_DIR/release" && sha256sum -c SHA256SUMS)
+      - name: Keep public outputs and build logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: a51-alpha5-${{ github.run_number }}
+          retention-days: 3
+          if-no-files-found: warn
+          path: |
+            out_alpha5/release/*
+            kernel-build.log
+            magisk-build.log
+      - name: Publish prerelease
+        if: success() && inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          tag="${RELEASE_TAG:-ci-alpha5-${GITHUB_RUN_NUMBER}-${GITHUB_SHA:0:9}}"
+          gh release create "$tag" "$VST_OUT_DIR"/release/* \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "A51 Alpha5 CI build ${GITHUB_SHA:0:9}" \
+            --notes-file "$VST_OUT_DIR/CI_RELEASE_NOTES.md"

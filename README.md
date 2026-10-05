@@ -1,8 +1,20 @@
-# VSTHunterKernel — Samsung Galaxy A51
+# VSTHunterKernel — Samsung Galaxy A51 / Exynos 9611 (universal9611)
 
 Linux 4.14.364 for SM-A515F / universal9611, maintained by Valentin Stars.
 Alpha5 was built and boot-tested on Evolution X Android 16 with Magisk 30.7.
 Other ROM/device combinations need separate validation.
+
+## Source lineage
+
+This is a downstream fork of Samsung universal9611 kernel sources for Galaxy A51
+(SM-A515F / Exynos 9611), with NetHunter and phone-specific fixes.
+The inherited build script references the NetHunter base maintained by
+[akabul0us](https://github.com/akabul0us/android_kernel_samsung_universal9611),
+whose upstream is
+[Exynos9611Development](https://github.com/Exynos9611Development/android_kernel_samsung_universal9611).
+This GitHub repository was created by importing the source history, so GitHub
+currently shows it as an independent repository rather than a native fork link.
+Kernel and firmware authors retain their original credits and licenses.
 
 ## Alpha5
 
@@ -59,3 +71,18 @@ are excluded from published assets.
 Kernel licensing is described in [COPYING](COPYING). Bundled firmware provenance,
 checksums and vendor redistribution terms are in
 [firmware/ALPHA5_FIRMWARE.md](firmware/ALPHA5_FIRMWARE.md).
+
+## Automation and diagnostics
+
+[Manual GitHub Actions builds](docs/CI.md) can package and publish a prerelease
+from a selected branch. Ordinary commits do not consume build runs.
+[Passive battery audit](tools/power-audit/README.md) records charging/discharge,
+wake sources, CPU/memory snapshots and system warnings without changing LiveBoot
+colors or suppressing logs. Graphs state the driver measurement limitations.
+
+[TTMod Android 16 crash report](docs/bugs/TTMOD_ANDROID16.md) documents the local
+app compatibility investigation. [Alpha5 session status](RELEASE_NOTES_ALPHA5.md)
+separates tested fixes from long-term battery/RAM/watchdog checks.
+
+[Open investigations and test plans](docs/OPEN_ISSUES.md) track the remaining
+battery, SystemUI, stats service, RAM and watchdog work.

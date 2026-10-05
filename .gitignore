@@ -156,3 +156,9 @@ build_status.txt
 # Generated Alpha5 module packages
 magisk_pack_src/
 magisk_release_zips/
+
+# Manual GitHub CI and retained local build artifacts
+!/.github/
+!/.github/workflows/
+!/.github/workflows/*.yml
+/verified-alpha5-artifacts/
