@@ -32,6 +32,9 @@ if [ "$vst_root" = /data/local/nhsystem/kali-arm64 ] && [ -e /data/adb/vst-kali-
     echo 'Kali image is offline for filesystem maintenance' >&2
     exit 1
 fi
+if [ "$vst_root" = /data/local/nhsystem/kali-arm64 ] && [ ! -f "$vst_root/etc/passwd" ]; then
+    /system/bin/sh /data/adb/modules/vst-nethunter-sd-fix/service.sh || exit 1
+fi
 if [ ! -f "$vst_root/etc/passwd" ]; then
     echo "Chroot is not mounted: $vst_root" >&2
     exit 1

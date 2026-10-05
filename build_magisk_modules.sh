@@ -183,7 +183,7 @@ PEOF
 
 # --- Module 7: USB OTG Power Switcher ---
 MOD7="$BASE_DIR/07_VST_USB_OTG_Power_Switcher"
-create_base_module "$MOD7" "vst-otg-power" "VST USB OTG High Current Switcher" "Reports USB OTG state; this hardware interface does not select an output current."
+create_base_module "$MOD7" "vst-otg-power" "VST USB OTG status" "Reports USB OTG state; this hardware interface does not select an output current."
 cat << 'BEOF' > "$MOD7/system/bin/vst-otg"
 #!/system/bin/sh
 case "${1:-status}" in
@@ -207,12 +207,14 @@ create_base_module "$MOD0" "vst-nethunter-sd-fix" "VST NetHunter SD and terminal
 cp "$TOPDIR/tools/alpha5/sd-mount.sh" "$MOD0/service.sh"
 cp "$TOPDIR/tools/alpha5/prepare-chroot.sh" "$MOD0/prepare-chroot.sh"
 cp "$TOPDIR/tools/alpha5/bootkali_init.sh" "$MOD0/bootkali_init.sh"
+cp "$TOPDIR/tools/alpha5/manager-dispatch.sh" "$MOD0/manager-dispatch.sh"
+cp "$TOPDIR/tools/alpha5/backup-rootfs.sh" "$MOD0/backup-rootfs.sh"
 cp "$TOPDIR/tools/alpha5/sd-customize.sh" "$MOD0/customize.sh"
 cp "$TOPDIR/tools/alpha5/killkali.sh" "$MOD0/system/bin/killkali"
 for alias in nh nethunter kali bootkali vst xakirphone andrax andrax-ng stryker strykeross pentest hack; do
     cp "$TOPDIR/tools/alpha5/nh.sh" "$MOD0/system/bin/$alias"
 done
-chmod 755 "$MOD0/service.sh" "$MOD0/prepare-chroot.sh" "$MOD0/system/bin/"*
+chmod 755 "$MOD0/service.sh" "$MOD0/prepare-chroot.sh" "$MOD0/backup-rootfs.sh" "$MOD0/system/bin/"*
 
 MOD8="$BASE_DIR/08_VST_Alpha5_Runtime"
 create_base_module "$MOD8" "vst-alpha5-runtime" "VST Alpha5 runtime fixes" "Sets hostname VST and disables incompatible Wi-Fi link layer statistics."

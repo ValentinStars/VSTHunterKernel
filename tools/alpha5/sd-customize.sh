@@ -1,7 +1,7 @@
 # Sourced by Magisk's installer.
 set_perm_recursive "$MODPATH" 0 0 0755 0644
 set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
-for vst_script in service.sh prepare-chroot.sh; do
+for vst_script in service.sh prepare-chroot.sh backup-rootfs.sh; do
     set_perm "$MODPATH/$vst_script" 0 0 0755
 done
 vst_backup=/data/adb/vst-alpha5-backup
@@ -35,5 +35,20 @@ if [ -f "$vst_scripts/bootkali_env" ]; then
         ' "$vst_scripts/bootkali_env" > "$vst_scripts/bootkali_env.alpha5"
         cat "$vst_scripts/bootkali_env.alpha5" > "$vst_scripts/bootkali_env"
         rm "$vst_scripts/bootkali_env.alpha5"
+    fi
+fi
+if [ -f "$vst_scripts/chrootmgr" ]; then
+    vst_hash=$(sha256sum "$vst_scripts/chrootmgr"); vst_hash=${vst_hash%% *}
+    if [ "$vst_hash" = 784a42663426f7595a22f6611e483a540fd237320dc1bad5ead3d189d4bafa89 ]; then
+        [ -f "$vst_backup/nethunter-scripts/chrootmgr" ] || cp -a "$vst_scripts/chrootmgr" "$vst_backup/nethunter-scripts/"
+        awk -v fragment="$MODPATH/manager-dispatch.sh" '
+            /^if \[ ! \$# -eq 0 \]; then/ {
+                while ((getline line < fragment) > 0) print line
+                close(fragment)
+            }
+            {print}
+        ' "$vst_scripts/chrootmgr" > "$vst_scripts/chrootmgr.alpha5"
+        cat "$vst_scripts/chrootmgr.alpha5" > "$vst_scripts/chrootmgr"
+        rm "$vst_scripts/chrootmgr.alpha5"
     fi
 fi

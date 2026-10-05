@@ -70,10 +70,44 @@ hooks were moved outside the execution directories to
 does not disable a Magisk hook. The original `nh_script.sh` was
 backed up before becoming an `nh` wrapper. Backups must be retained for rollback.
 
+## Validation on the inspected phone
+
+Alpha5 Image and both modules built successfully with Neutron Clang 18. The
+phone booted `4.14.364-NetHunter-VST-Alpha5`, retained Magisk root and loaded
+slcan with the matching vermagic. Compiler metadata now reports the actual
+compiler rather than the former hardcoded Clang 20 string.
+
+The 15 GiB Kali image was backed up completely before offline repair. e2fsck
+repaired free-space counters and allocation bitmap checksums. A second offline
+`e2fsck -fn` finished with exit 0. A 32 MiB fsync write and direct read inside
+Kali produced identical SHA256 values. Native exFAT checking was restored;
+vold reported Check OK. The mount service never performs automatic repair.
+
+Interactive PTY tests passed for Kali, ANDRAX and Stryker. LAN transfers of
+96 MiB passed checksum verification with stable Wi-Fi HAL/system_server PIDs
+using the statistics workaround. This was a short test, not a long-duration
+stability guarantee. The owner can mount Kali on demand after a late unlock.
+Chroot Manager status uses the canonical image mount path. Its backup dispatch
+keeps the image mounted, excludes Android bind mounts and refuses busy chroots.
+Directory remove/restore actions are blocked for this image-backed setup;
+image replacement requires an explicit offline maintenance operation.
+
+The user confirmed Termux and the network work after reboot. The crash buffer
+and last-ANR report were empty during the initial Alpha5 observation period.
+
+Exteragram's historical ANR showed its main thread waiting in the Python
+`hasMediaSpoilers` hook. The active Anti-Spoiler plugin installs this hook.
+Its enabled preference was backed up and toggled off as a diagnostic workaround;
+this disables automatic spoiler removal. The user confirmed Exteragram works
+after the next reboot/unlock; long-duration behaviour remains to be checked.
+TikTok's modified APK has historical ART class-linker null pointer crashes;
+these are not certified fixed by the kernel changes.
+
 ## Still to validate
 
-Kernel Image/modules build and boot; recurring ROM/watchdog crashes; outgoing
-SIM calls after a reboot; screen-off battery consumption; long-running Wi-Fi
-LAN traffic; SD image I/O; NetHunter Manager lifecycle; TikTok/Exteragram native
-crashes; RAM behaviour; offline charging. The initial observations and script
-checks do not establish that all these issues are fixed.
+Long-duration soft-reboot/watchdog behaviour; outgoing SIM calls after repeated
+reboots; unplugged screen-off battery consumption; prolonged Wi-Fi LAN use;
+RAM trends; Exteragram's normal-use result and TikTok's ART crashes. Offline
+charging was deferred by the user. No claim is made that all 17 reported issues
+are resolved. Full private image/boot/ROM backups are deliberately not release
+assets.
