@@ -15,7 +15,7 @@ if [[ ! -x "$VST_COMPILER_DIR/bin/clang" ]]; then
 fi
 export PATH="$VST_COMPILER_DIR/bin:$PATH"
 mkdir -p "$VST_BUILD_DIR"
-VST_MAKE_ARGS=(O="$VST_BUILD_DIR" ARCH=arm64
+VST_MAKE_ARGS=(O="$VST_BUILD_DIR" ARCH=arm64 LOCALVERSION=
     HOSTCC="clang -fuse-ld=lld" HOSTCXX="clang++ -fuse-ld=lld"
     CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm
     OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip

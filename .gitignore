@@ -152,3 +152,7 @@ build_status.txt
 !/firmware/**/*.ihex
 
 
+
+# Generated Alpha5 module packages
+magisk_pack_src/
+magisk_release_zips/
