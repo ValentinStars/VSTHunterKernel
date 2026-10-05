@@ -49,7 +49,7 @@ services.jar. Instructions and the inspected input hash are in
 | Offline charging watchdog | User deferred physical test |
 | Wi-Fi LAN drops | Statistics workaround; 96 MiB short LAN checksum test passed |
 | RAM drops | Baseline recorded; no leak fix claimed |
-| TikTok / Exteragram | ART crashes in modified TikTok remain; Anti-Spoiler disabled reversibly for Exteragram ANR; user confirms app works after reboot |
+| TikTok / Exteragram | TTMod SDK 36 visibility-hook workaround passed five cold starts; Anti-Spoiler disabled reversibly for Exteragram ANR; long-term app validation remains |
 | Kali SD I/O | Full 15 GiB backup, offline metadata repair, clean recheck, 32 MiB fsync/direct-read checksum test passed |
 | Ctrl+C ends terminals | PTY tests passed for Kali/ANDRAX/Stryker launchers; app-specific confirmation remains |
 | Logcat errors | Concrete framework/Wi-Fi/Termux causes addressed; logcat is not expected to be globally empty |
@@ -74,3 +74,13 @@ Do not restore the old automatic live-fsck or fake exFAT checker hooks.
 
 Phone-specific boot images and user data are excluded. Published SHA256SUMS
 covers all release assets except the checksum file itself.
+
+## TikTok follow-up
+
+A fresh Alpha5 crash reproduced the ART SetupClass failure with the hook pointer
+inside the installed libttmod.so. This matches the optional LSPlant visibility
+hook failure reported in [LSPlant issue 179](https://github.com/LSPosed/LSPlant/issues/179).
+The local workaround disables two optional symbol lookups for the exact inspected
+library only. Five cold app starts survived without new native crashes.
+`patch_tiktok_lib.py` generates a local Magisk overlay; no third-party library or
+APK is redistributed. Normal use and long-duration validation are still needed.

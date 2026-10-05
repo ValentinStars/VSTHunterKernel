@@ -100,8 +100,8 @@ Exteragram's historical ANR showed its main thread waiting in the Python
 Its enabled preference was backed up and toggled off as a diagnostic workaround;
 this disables automatic spoiler removal. The user confirmed Exteragram works
 after the next reboot/unlock; long-duration behaviour remains to be checked.
-TikTok's modified APK has historical ART class-linker null pointer crashes;
-these are not certified fixed by the kernel changes.
+TikTok reproduced the ART class-linker crash on Alpha5. A separate local
+TTMod overlay then passed five cold starts; see the local overlay section below.
 
 ## Still to validate
 
@@ -111,3 +111,27 @@ RAM trends; Exteragram's normal-use result and TikTok's ART crashes. Offline
 charging was deferred by the user. No claim is made that all 17 reported issues
 are resolved. Full private image/boot/ROM backups are deliberately not release
 assets.
+
+## Local TTMod Android 16 overlay
+
+The fresh Alpha5 TikTok tombstone reproduced a null call from ART SetupClass.
+The hook address resolves into the installed libttmod.so, which embeds LSPlant.
+The upstream report https://github.com/LSPosed/LSPlant/issues/179 describes the
+optional ClassLinker visibility hook causing this same SDK 36 failure.
+
+`patch_tiktok_lib.py` accepts only the exact inspected ARM64 library SHA256
+`45ef87b1038007c9e5692d815500617837d48da17065431cc63a6d1289b5825b`.
+It changes the two optional visibility lookup names to same-length unresolved
+names. No ELF offsets, executable instructions or Android ART library are changed.
+The local module waits for Android boot completion, checks SDK 36 and the current
+app library hash, then binds the patched copy over that app's library. A different
+APK build is skipped. The private original/library/module are not release assets.
+
+```sh
+python3 tools/alpha5/patch_tiktok_lib.py /path/to/libttmod.so /path/to/local-fix.zip
+```
+
+Rollback: disable `vst_tiktok_art_fix` in Magisk and reboot. For immediate removal,
+stop TikTok and unmount its library overlay from a root shell. Re-enabling the
+optional hooks may reproduce the original crash. This workaround requires
+normal-use confirmation and does not establish long-term app stability.
