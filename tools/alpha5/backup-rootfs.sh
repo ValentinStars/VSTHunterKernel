@@ -1,6 +1,7 @@
 #!/system/bin/sh
 # Export an image-backed Kali rootfs without archiving Android's bind mounts.
 set -eu
+set -o pipefail
 vst_root=$(readlink -f "${1:?Specify the Kali root directory}")
 vst_output=${2:?Specify an absolute archive path}
 [ "$vst_root" = /data/local/nhsystem/kali-arm64 ] || { echo 'Unsupported chroot for this image export' >&2; exit 64; }
@@ -37,7 +38,11 @@ for vst_mount in $(awk -v root="$vst_root/" 'index($2,root) == 1 {print $2}' /pr
 done
 case "$vst_compress" in
     gzip) /data/adb/magisk/busybox tar -czf "$vst_temp" "$@" -C /data/local/nhsystem kali-arm64 ;;
-    xz) /data/adb/magisk/busybox tar -cJf "$vst_temp" "$@" -C /data/local/nhsystem kali-arm64 ;;
+    xz)
+        [ -x "$vst_root/usr/bin/xz" ] || { echo 'Kali xz is unavailable; use .tar.gz' >&2; exit 1; }
+        /data/adb/magisk/busybox tar -cf - "$@" -C /data/local/nhsystem kali-arm64 |
+            /system/bin/chroot "$vst_root" /usr/bin/xz -T1 -c > "$vst_temp"
+        ;;
 esac
 sync
 mv "$vst_temp" "$vst_output"
