@@ -1,67 +1,38 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-TOPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUTDIR="$TOPDIR/out"
-TOOLCHAIN_DIR="$TOPDIR/Neutron_Clang_18"
-DEFCONFIG="vstnh_defconfig"
-KERNEL_VERSION="Alpha2"
+VST_TOPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VST_BUILD_DIR="${VST_OUT_DIR:-$VST_TOPDIR/out_alpha5}"
+VST_COMPILER_DIR="${VST_TOOLCHAIN_DIR:-$VST_TOPDIR/Neutron_Clang_18}"
+VST_JOB_COUNT="${VST_JOBS:-$(nproc)}"
+VST_DEFCONFIG="${VST_CONFIG:-vstnh_defconfig}"
+VST_RELEASE="Alpha5"
 
-echo "============================================================"
-echo "⚡ VSTHunterKernel (VSTnh) — Automated Build System"
-echo "👑 Author: Valentin Stars (vstbio.t.me)"
-echo "📱 Device: Samsung Galaxy A51 (SM-A515F / universal9611)"
-echo "🎯 Version: $KERNEL_VERSION"
-echo "============================================================"
-
-# Check and download Neutron Clang if missing
-if [ ! -d "$TOOLCHAIN_DIR/bin" ]; then
-    echo "[*] Neutron Clang toolchain not found. Downloading..."
-    mkdir -p "$TOOLCHAIN_DIR"
-    cd "$TOOLCHAIN_DIR"
-    curl -LO "https://github.com/Neutron-Toolchains/antman/raw/main/antman"
-    chmod +x antman
-    ./antman -S
-    ./antman --patch=glibc
-    cd "$TOPDIR"
-fi
-
-export PATH="$TOOLCHAIN_DIR/bin:$PATH"
-
-# Check compiler version
-echo "[*] Using compiler: $(clang --version | head -n 1)"
-
-mkdir -p "$OUTDIR"
-
-# Generate defconfig
-echo "[*] Generating configuration from $DEFCONFIG..."
-make O="$OUTDIR" ARCH=arm64 HOSTCC=clang HOSTCXX=clang++ CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 "$DEFCONFIG"
-
-# Build Kernel Image
-echo "[*] Compiling Kernel Image..."
-make -j$(nproc) O="$OUTDIR" ARCH=arm64 HOSTCC=clang HOSTCXX=clang++ CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 Image
-
-if [ ! -f "$OUTDIR/arch/arm64/boot/Image" ]; then
-    echo "[-] ERROR: Kernel Image compilation failed!"
+if [[ ! -x "$VST_COMPILER_DIR/bin/clang" ]]; then
+    echo "Clang toolchain missing: $VST_COMPILER_DIR/bin/clang" >&2
+    echo 'Set VST_TOOLCHAIN_DIR to the inspected Neutron Clang 18 installation.' >&2
     exit 1
 fi
+export PATH="$VST_COMPILER_DIR/bin:$PATH"
+mkdir -p "$VST_BUILD_DIR"
+VST_MAKE_ARGS=(O="$VST_BUILD_DIR" ARCH=arm64
+    HOSTCC="clang -fuse-ld=lld" HOSTCXX="clang++ -fuse-ld=lld"
+    CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm
+    OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip
+    CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+    LLVM=1 LLVM_IAS=1)
 
-echo "[+] Kernel Image compiled successfully!"
-
-# Build Modules
-echo "[*] Building Kernel Modules..."
-make -j$(nproc) O="$OUTDIR" ARCH=arm64 HOSTCC=clang HOSTCXX=clang++ CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 modules || true
-
-# Package AnyKernel3 Zip
-echo "[*] Packaging AnyKernel3 Flashable Zip..."
-cp "$OUTDIR/arch/arm64/boot/Image" "$TOPDIR/AnyKernel3/Image"
-cd "$TOPDIR/AnyKernel3"
-ZIP_NAME="VSTHunterKernel-A51-NetHunter-VST-${KERNEL_VERSION}.zip"
-zip -r9 "$OUTDIR/$ZIP_NAME" * -x "*.zip"
-rm -f "$TOPDIR/AnyKernel3/Image"
-cd "$TOPDIR"
-
-echo "============================================================"
-echo "[+] BUILD SUCCESSFUL!"
-echo "[+] Flashable Zip: $OUTDIR/$ZIP_NAME"
-echo "============================================================"
+cd "$VST_TOPDIR"
+clang --version | head -n 1
+make "${VST_MAKE_ARGS[@]}" "$VST_DEFCONFIG"
+make -j"$VST_JOB_COUNT" "${VST_MAKE_ARGS[@]}" Image modules
+[[ -s "$VST_BUILD_DIR/arch/arm64/boot/Image" ]]
+VST_STAGE="$(mktemp -d "$VST_BUILD_DIR/anykernel.XXXXXX")"
+trap 'rm -rf -- "$VST_STAGE"' EXIT
+cp -a "$VST_TOPDIR/AnyKernel3/." "$VST_STAGE/"
+cp "$VST_BUILD_DIR/arch/arm64/boot/Image" "$VST_STAGE/Image"
+VST_ZIP="$VST_BUILD_DIR/VSTHunterKernel-A51-NetHunter-VST-$VST_RELEASE.zip"
+rm -f -- "$VST_ZIP"
+(cd "$VST_STAGE" && zip -qr9 "$VST_ZIP" . -x '*.zip' '.git/*')
+sha256sum "$VST_ZIP"
+echo "Kernel and modules built successfully: $VST_ZIP"
