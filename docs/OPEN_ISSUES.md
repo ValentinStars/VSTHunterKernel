@@ -8,7 +8,7 @@ include ROM/vendor issues as well as kernel code.
 | --- | --- | --- |
 | Battery autonomy | Passive recorder installed; current sensors report zero; charge_counter is derived from SOC | Cable unplugged normal use/idle cycle, then charging cycle; SOC/temperature/wake/CPU comparison, controlled repeats |
 | SystemUI NetworkTraffic | Fresh log buffer: over 15,000 layout warnings in several minutes while Dozing | Inspect ROM widget onMeasure/visibility/update scheduling; fix layout feedback loop in the matching ROM source/overlay, preserve LiveBoot colors |
-| stats daemon | Native binder clients repeatedly wait for `stats`; expected statsd service missing | Inspect APEX init definition, module overrides and startup failures; restore intended service rather than silence clients |
+| stats daemon | APEX contains a disabled init service, but no daemon was running. Starting through `ctl.start statsd` restored binder `stats`; repeated client waits stopped | Runtime hook starts the declared service on the exact EvolutionX 20260221 build only. Check next boot and longer use; investigate why ROM startup omitted it |
 | Launcher ANR | One focused-window timeout during the latest boot | Read the saved ANR main-thread stack and correlate first unlock, SystemUI load and stats service |
 | Watchdog / offline charging | Original init fatal flags removed; no certified offline charging test | Preserve pstore before reboot; supervised powered-off charging test with hardware recovery available; correlate blocked process/driver |
 | RAM | Minute MemAvailable/SwapFree plus process RSS, vmstat and pressure snapshots | Compare slopes over repeated workloads; distinguish reclaim/slab growth from a reproducible leak; patch only the confirmed allocation/lifecycle bug |
@@ -27,3 +27,9 @@ Host storage blocker: the USB F2FS volume reports inconsistent node blocks.
 Offline filesystem maintenance is needed before making it the sole location of
 private backups. Working tree and compressed Kali backup are currently retained
 on the laptop; verified compression and build-cache removal saved about 13 GiB.
+
+The statsd workaround can be skipped by creating
+`/data/adb/vst-disable-statsd-workaround`. It does not replace the daemon, change
+its UID or silence logging. The live recovery is verified; its next-boot path
+has not yet been tested. Aconfig socket services are separate and remain under
+investigation.
