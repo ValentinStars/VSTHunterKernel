@@ -77,7 +77,8 @@ while [ -f "$vst_base/enabled" ]; do
         dumpsys activity lastanr > "$vst_temp/lastanr.txt" 2>/dev/null || true
         dmesg > "$vst_temp/dmesg.txt" 2>/dev/null || true
         logcat -b all -d -v threadtime -t 2000 '*:W' > "$vst_temp/logcat-warnings.txt" 2>/dev/null || true
-        "$vst_bb" tar -czf "$vst_temp.tar.gz" -C "$vst_dir" "${vst_temp##*/}"
+        "$vst_bb" tar -czf "$vst_temp.tar.gz.partial" -C "$vst_dir" "${vst_temp##*/}"
+        mv "$vst_temp.tar.gz.partial" "$vst_temp.tar.gz"
         rm -rf "$vst_temp"
         sync
         vst_snapshot_end=$(cut -d ' ' -f1 /proc/uptime)

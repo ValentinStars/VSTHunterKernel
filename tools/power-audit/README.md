@@ -18,6 +18,12 @@ samples, >=5 minute average SOC rates and measurement limits. Identifying a
 particular app as the cause requires comparing CPU/wakelock deltas and repeating
 the workload, not assigning power from a package name alone.
 
+Rate windows stop at charging-state, power-source or charging-type changes and
+sampling gaps over ten minutes. Fastest and slowest charging summaries require
+positive SOC rise while Charging with external power; discharge or flat samples
+are not labelled charging. Snapshots are published by rename after compression;
+an unfinished `.partial` file from shutdown is excluded from the report.
+
 ## On-phone controls
 
 Scripts live in `/data/adb/vst-power-audit`; logs in `sessions/` (root-only).

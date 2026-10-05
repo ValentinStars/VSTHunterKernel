@@ -28,7 +28,7 @@ with zipfile.ZipFile(dest / 'VST-Alpha5-Kernel-Modules.zip', 'w', zipfile.ZIP_DE
         assert b'4.14.364-NetHunter-VST-Alpha5 SMP' in f.read_bytes()
         z.write(f, f.name)
 with zipfile.ZipFile(dest / 'VST-Alpha5-Helpers-Source.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-    sources = subprocess.check_output(['git','ls-files','tools/alpha5','tools/power-audit','docs'],cwd=root,text=True).splitlines()
+    sources = subprocess.check_output(['git','ls-files','tools/alpha5','tools/power-audit','tools/rom','docs'],cwd=root,text=True).splitlines()
     for name in sources:
         f=root/name
         if f.is_file(): z.write(f,name)

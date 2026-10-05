@@ -41,8 +41,13 @@ def main():
     for i, row in enumerate(rows):
         row['net_soc_pct_per_h'] = math.nan
         # Derive a >=5 minute average from the same boot; no instantaneous peak claims.
-        for previous in reversed(rows[:i]):
-            if previous['boot_id'] != row['boot_id']:
+        phase_keys = ('status', 'charging_enabled', 'charging_type',
+                      'usb_online', 'ac_online', 'wireless_online')
+        for j in range(i - 1, -1, -1):
+            previous = rows[j]
+            if (previous['boot_id'] != row['boot_id'] or
+                any(previous.get(k) != row.get(k) for k in phase_keys) or
+                number(rows[j+1]['epoch_s']) - number(previous['epoch_s']) > 600):
                 break
             elapsed = number(row['epoch_s']) - number(previous['epoch_s'])
             if elapsed > 1800:
@@ -85,7 +90,10 @@ def main():
         axis.grid(alpha=.25)
         axis.legend(loc='upper left', fontsize=8)
         for i in range(1, len(rows)):
-            if rows[i]['boot_id'] == rows[i-1]['boot_id'] and any(number(rows[i].get(k))==1 for k in ['usb_online','ac_online','wireless_online']):
+            if (rows[i]['boot_id'] == rows[i-1]['boot_id'] and
+                number(rows[i]['epoch_s']) - number(rows[i-1]['epoch_s']) <= 600 and
+                all(any(number(r.get(k)) == 1 for k in ['usb_online', 'ac_online', 'wireless_online'])
+                    for r in (rows[i-1], rows[i]))):
                 axis.axvspan(times[i-1], times[i], color='#bcd7ec', alpha=.2)
     axes[1].axhline(0, color='gray', lw=.7)
     current_present = any(number(r['current_ua']) != 0 and math.isfinite(number(r['current_ua'])) for r in rows)
@@ -148,12 +156,18 @@ def main():
         w=csv.writer(f);w.writerow(['source','observed_active_time_delta_ms'])
         w.writerows(wake_totals.most_common())
     finite_rates=[r for r in rows if math.isfinite(r['net_soc_pct_per_h'])]
-    worst=sorted(finite_rates,key=lambda r:r['net_soc_pct_per_h'])[:10]
-    best=sorted(finite_rates,key=lambda r:r['net_soc_pct_per_h'],reverse=True)[:10]
+    worst=sorted((r for r in finite_rates if r['net_soc_pct_per_h'] < 0),
+                 key=lambda r:r['net_soc_pct_per_h'])[:10]
+    charging_rates=[r for r in finite_rates if r['net_soc_pct_per_h'] > 0 and
+                    r['status'] == 'Charging' and
+                    any(number(r.get(k)) == 1 for k in ['usb_online', 'ac_online', 'wireless_online'])]
+    best=sorted(charging_rates,key=lambda r:r['net_soc_pct_per_h'],reverse=True)[:10]
+    slowest=sorted(charging_rates,key=lambda r:r['net_soc_pct_per_h'])[:10]
     summary={'samples':len(rows),'boots':len(boots),'driver_current_nonzero_seen':current_present,
              'first_utc':times[0].isoformat(),'last_utc':times[-1].isoformat(),
              'highest_net_discharge_windows':[{k:r[k] for k in ['epoch_s','net_soc_pct_per_h','status','wakefulness','temp_deci_c']} for r in worst],
              'highest_net_charge_windows':[{k:r[k] for k in ['epoch_s','net_soc_pct_per_h','status','charging_type']} for r in best],
+             'lowest_net_charge_windows':[{k:r[k] for k in ['epoch_s','net_soc_pct_per_h','status','charging_type']} for r in slowest],
              'top_wakeup_active_ms':wake_totals.most_common(20),
              'top_observed_process_cpu_seconds':cpu_totals.most_common(20),
              'repeated_warning_text_in_snapshots':warning_lines.most_common(30)}
