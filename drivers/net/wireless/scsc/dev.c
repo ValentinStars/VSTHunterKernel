@@ -56,7 +56,8 @@ static int sig_wait_cfm_timeout = 6000;
 module_param(sig_wait_cfm_timeout, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(sig_wait_cfm_timeout, "Signal wait timeout in milliseconds (default: 3000)");
 
-static bool lls_disabled;
+/* The A51 legacy HAL passes incompatible peer stats to Android 16 AIDL. */
+static bool lls_disabled = true;
 module_param(lls_disabled, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(lls_disabled, "Disable LLS: to disable LLS set 1");
 
