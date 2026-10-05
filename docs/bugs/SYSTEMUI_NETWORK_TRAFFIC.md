@@ -25,6 +25,12 @@ log levels or collection. It may avoid overflow in this layout; different font,
 icon or display settings can still trigger the underlying bug. Battery savings
 have not yet been measured.
 
+A separate 20-second comparison kept the same SystemUI PID and Dozing state:
+arrows hidden used 1.65 CPU seconds (8.2% of one core); arrows visible used 9.31
+CPU seconds (46.3%). Arrows were hidden again afterward. This supports a CPU
+cost from the loop; these short, sequential windows do not establish battery
+runtime or precise energy savings.
+
 `tools/rom/NetworkTraffic-width.patch` proposes a source fix: retain an active
 indicator's width when the container hides it for overflow, and use INVISIBLE
 instead of GONE in that state. Inactive traffic can still use GONE. Width updates
