@@ -38,7 +38,8 @@ https://github.com/Evolution-X/frameworks_base/blob/vic/services/core/java/com/a
 The inspected input SHA256 is
 `2c9d17b6b2efb57a77ea35e6d00bb9ece7e8747dde7b6abca8fb9df2f0880514`.
 The generated jar passed on-device `dex2oat64 --compiler-filter=verify`.
-The overlay is installed pending reboot; boot validation is still outstanding.
+The overlay loaded successfully after reboot. The first system_server remained
+alive and the crash buffer was empty during the initial observation period.
 
 ```sh
 python3 -m venv /tmp/a51-dex-tools
@@ -64,7 +65,9 @@ These scripts require the inspected Magisk BusyBox and Magisk `su -i` support.
 
 On the inspected phone the original module was copied to
 `/data/adb/vst-alpha5-backup/vst-nethunter-sd-fix`; standalone duplicate SD/fsck
-hooks were renamed with `.alpha4-disabled`. The original `nh_script.sh` was
+hooks were moved outside the execution directories to
+`/data/adb/vst-alpha5-backup/disabled-hooks`. Renaming a suffix inside `service.d`
+does not disable a Magisk hook. The original `nh_script.sh` was
 backed up before becoming an `nh` wrapper. Backups must be retained for rollback.
 
 ## Still to validate

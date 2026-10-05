@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 TOPDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$TOPDIR/magisk_pack_src"
 OUT_DIR="$TOPDIR/magisk_release_zips"
+KERNEL_OUT="${VST_OUT_DIR:-$TOPDIR/out_alpha5}"
+if [ ! -s "$KERNEL_OUT/drivers/net/can/slcan.ko" ]; then
+    echo "Build Alpha5 Image and modules before packaging: $KERNEL_OUT" >&2
+    exit 1
+fi
 
 rm -rf "$BASE_DIR" "$OUT_DIR"
 mkdir -p "$BASE_DIR" "$OUT_DIR"
@@ -19,43 +24,18 @@ create_base_module() {
     cat << MEOF > "$mod_dir/module.prop"
 id=$id
 name=$name
-version=v2.0-Alpha4
-versionCode=400
+version=v2.0-Alpha5
+versionCode=500
 author=Valentin Stars (vstbio.t.me)
 description=$desc
 MEOF
 
-    cat << UEOF > "$mod_dir/META-INF/com/google/android/updater-script"
-#MAGISK
-UEOF
-
-    cat << 'UEOF' > "$mod_dir/META-INF/com/google/android/update-binary"
-#!/sbin/sh
-OUTFD=$2
-ZIPFILE=$3
-ui_print() { echo "ui_print $1" > /proc/self/fd/$OUTFD; echo "ui_print" > /proc/self/fd/$OUTFD; }
-
-ui_print " "
-ui_print ".-..-..---..---.                   "
-ui_print "| .\` || |- \`| |'                   "
-ui_print "\`-'\`-'\`---' \`-'                    "
-ui_print "                                   "
-ui_print ".-. .-..-..-..-..-..---..---..---. "
-ui_print "| |=| || || || .\` |\`| |'| |- | |-< "
-ui_print "\`-'\`-' \`----'\`-'\`-' \`-' \`---'\`-'\`-' "
-ui_print " "
-ui_print "        ⚡ Valentin Stars (vstbio.t.me) ⚡"
-ui_print " "
-ui_print "- Installing module..."
-ui_print "- Author: Valentin Stars (vstbio.t.me)"
-ui_print "- Extracting files..."
-unzip -o "$ZIPFILE" -d "$MODPATH" 2>/dev/null || true
-ui_print "- Setting permissions..."
+    cat << 'CEOF' > "$mod_dir/customize.sh"
+set_perm_recursive "$MODPATH" 0 0 0755 0644
 set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
-ui_print "- Done! Reboot to apply."
-exit 0
-UEOF
-    chmod 755 "$mod_dir/META-INF/com/google/android/update-binary"
+[ ! -f "$MODPATH/service.sh" ] || set_perm "$MODPATH/service.sh" 0 0 0755
+CEOF
+
 }
 
 # --- Module 1: BadUSB & NetHunter HID ---
@@ -72,12 +52,12 @@ cat << 'BEOF' > "$MOD1/system/bin/vst-badusb"
 #!/system/bin/sh
 echo "=== VST BadUSB & NetHunter HID Arsenal (hakirfon) by Valentin Stars ==="
 if [ -c /dev/hidg0 ]; then
-    echo "[+] Keyboard gadget node: /dev/hidg0 (READY - 0666)"
+    echo "[+] Keyboard gadget node: /dev/hidg0 (present)"
 else
     echo "[-] /dev/hidg0 not found"
 fi
 if [ -c /dev/hidg1 ]; then
-    echo "[+] Mouse gadget node: /dev/hidg1 (READY - 0666)"
+    echo "[+] Mouse gadget node: /dev/hidg1 (present)"
 else
     echo "[-] /dev/hidg1 not found"
 fi
@@ -88,12 +68,10 @@ chmod 755 "$MOD1/system/bin/vst-badusb"
 
 # --- Module 2: WireGuard Toolkit ---
 MOD2="$BASE_DIR/02_VST_WireGuard_Toolkit"
-create_base_module "$MOD2" "vst-wireguard" "VST WireGuard Kernel Toolkit" "WireGuard kernel accelerator, sets up high-performance routing, BBR TCP and forwarding helper 'vst-wg'."
+create_base_module "$MOD2" "vst-wireguard" "VST WireGuard Kernel Toolkit" "Reports WireGuard kernel support and active interfaces."
 cat << 'SEOF' > "$MOD2/service.sh"
 #!/system/bin/sh
-sysctl -w net.ipv4.ip_forward=1 2>/dev/null || true
-sysctl -w net.ipv6.conf.all.forwarding=1 2>/dev/null || true
-sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null || true
+# Routing and congestion control are configured by the VPN/network manager.
 SEOF
 chmod 755 "$MOD2/service.sh"
 
@@ -101,7 +79,7 @@ cat << 'BEOF' > "$MOD2/system/bin/vst-wg"
 #!/system/bin/sh
 echo "=== VST WireGuard Kernel Toolkit by Valentin Stars ==="
 if [ -d /sys/module/wireguard ]; then
-    echo "[+] WireGuard Kernel Module: LOADED & ACCELERATED (ARM64 NEON)"
+    echo "[+] WireGuard Kernel Module: present"
     cat /sys/module/wireguard/version 2>/dev/null || true
 else
     echo "[-] WireGuard module not found in /sys/module/"
@@ -113,45 +91,39 @@ chmod 755 "$MOD2/system/bin/vst-wg"
 
 # --- Module 3: Wireless Pentest Arsenal ---
 MOD3="$BASE_DIR/03_VST_Wireless_Pentest_Arsenal"
-create_base_module "$MOD3" "vst-wireless" "VST Wireless Pentest Firmware & Toolkit" "Installs firmware for RTL8812AU, RTL8814AU, ATH9K, RTL8188EU with 'vst-wifi' monitor-mode CLI tool."
+create_base_module "$MOD3" "vst-wireless" "VST Wireless Pentest Firmware & Toolkit" "Installs the embedded firmware set and provides an iw-based mode helper. Driver support depends on the kernel configuration."
 mkdir -p "$MOD3/system/etc/firmware"
-if [ -d "/run/media/valentin_stars/linux/VST_Magisk_Pack/03_VST_Wireless_Pentest_Arsenal/system/etc/firmware" ]; then
-    cp -r /run/media/valentin_stars/linux/VST_Magisk_Pack/03_VST_Wireless_Pentest_Arsenal/system/etc/firmware/* "$MOD3/system/etc/firmware/" 2>/dev/null || true
-elif [ -d "$TOPDIR/firmware" ]; then
-    cp -r "$TOPDIR"/firmware/* "$MOD3/system/etc/firmware/" 2>/dev/null || true
-fi
+while read -r vst_hash vst_name; do
+    mkdir -p "$MOD3/system/etc/firmware/$(dirname "$vst_name")"
+    cp "$TOPDIR/firmware/$vst_name" "$MOD3/system/etc/firmware/$vst_name"
+done < "$TOPDIR/firmware/alpha5-firmware.sha256"
+cp "$TOPDIR/firmware/"LICENCE.* "$MOD3/system/etc/firmware/"
 
 cat << 'BEOF' > "$MOD3/system/bin/vst-wifi"
 #!/system/bin/sh
-echo "=== VST Wireless Pentest Arsenal (hakirfon) by Valentin Stars ==="
-IFACE=${2:-wlan1}
-case "$1" in
-    monitor|start)
-        echo "[*] Putting $IFACE into Monitor Mode..."
-        ip link set $IFACE down 2>/dev/null || ifconfig $IFACE down 2>/dev/null
-        iw dev $IFACE set type monitor 2>/dev/null || iwconfig $IFACE mode monitor 2>/dev/null
-        ip link set $IFACE up 2>/dev/null || ifconfig $IFACE up 2>/dev/null
-        echo "[+] $IFACE is now in Monitor Mode (Promiscuous Packet Injection READY)!"
-        ;;
-    managed|stop)
-        echo "[*] Putting $IFACE into Managed Mode..."
-        ip link set $IFACE down 2>/dev/null || ifconfig $IFACE down 2>/dev/null
-        iw dev $IFACE set type managed 2>/dev/null || iwconfig $IFACE mode managed 2>/dev/null
-        ip link set $IFACE up 2>/dev/null || ifconfig $IFACE up 2>/dev/null
-        echo "[+] $IFACE is now in Managed Mode!"
-        ;;
+set -eu
+vst_iface=${2:-wlan1}
+case "${1:-list}" in
+    list) ip link show; exit 0 ;;
+    monitor|start) vst_type=monitor ;;
+    managed|stop) vst_type=managed ;;
     power|txpower)
-        PWR=${3:-30}
-        echo "[*] Setting $IFACE txpower to ${PWR}dBm..."
-        iw dev $IFACE set txpower fixed ${PWR}00 2>/dev/null || iwconfig $IFACE txpower $PWR 2>/dev/null
-        echo "[+] Done."
-        ;;
-    list|*)
-        echo "Usage: vst-wifi [monitor|managed|txpower|list] [interface]"
-        echo "Available interfaces:"
-        ip link | grep -E "wlan|mon"
-        ;;
+        vst_power=${3:?Specify tx power in dBm}
+        case "$vst_power" in *[!0-9]*|'') echo 'TX power must be a nonnegative integer' >&2; exit 64 ;; esac
+        iw dev "$vst_iface" set txpower fixed "$((vst_power * 100))"
+        iw dev "$vst_iface" info
+        exit 0 ;;
+    *) echo 'Usage: vst-wifi [monitor|managed|txpower|list] [interface] [dBm]' >&2; exit 64 ;;
 esac
+ip link show dev "$vst_iface" >/dev/null
+command -v iw >/dev/null || { echo 'iw is required' >&2; exit 1; }
+ip link set "$vst_iface" down
+if ! iw dev "$vst_iface" set type "$vst_type"; then
+    ip link set "$vst_iface" up
+    exit 1
+fi
+ip link set "$vst_iface" up
+iw dev "$vst_iface" info
 BEOF
 chmod 755 "$MOD3/system/bin/vst-wifi"
 
@@ -160,7 +132,7 @@ MOD4="$BASE_DIR/04_VST_SDR_Radio_Hacker"
 create_base_module "$MOD4" "vst-sdr" "VST SDR & Radio Hacker Toolkit" "SDR device permissions and rules for HackRF One, RTL-SDR, AirSpy, MSI2500 with 'vst-sdr' helper."
 cat << 'SEOF' > "$MOD4/service.sh"
 #!/system/bin/sh
-chmod -R 666 /dev/bus/usb/ 2>/dev/null || true
+# Preserve Android USB node and directory permissions; SDR tools use root.
 SEOF
 chmod 755 "$MOD4/service.sh"
 
@@ -178,16 +150,16 @@ chmod 755 "$MOD4/system/bin/vst-sdr"
 MOD5="$BASE_DIR/05_VST_Hardware_Hacking_CAN"
 create_base_module "$MOD5" "vst-hardware-can" "VST Hardware Hacking & SocketCAN Pack" "Auto-configures CDC-ACM for Flipper Zero, Proxmark3, Chameleon, FTDI, CP210x and SocketCAN with 'vst-can' helper."
 mkdir -p "$MOD5/system/lib/modules"
-if [ -f "$TOPDIR/out_alpha3/drivers/net/can/slcan.ko" ]; then
-    cp "$TOPDIR/out_alpha3/drivers/net/can/slcan.ko" "$MOD5/system/lib/modules/slcan.ko"
-fi
+cp "$KERNEL_OUT/drivers/net/can/slcan.ko" "$MOD5/system/lib/modules/slcan.ko"
 
 cat << 'SEOF' > "$MOD5/service.sh"
 #!/system/bin/sh
 MODDIR=${0%/*}
 chmod 666 /dev/ttyACM* /dev/ttyUSB* 2>/dev/null || true
 if [ -f "$MODDIR/system/lib/modules/slcan.ko" ]; then
-    insmod "$MODDIR/system/lib/modules/slcan.ko" 2>/dev/null || true
+    if ! grep -q '^slcan ' /proc/modules; then
+        insmod "$MODDIR/system/lib/modules/slcan.ko" || exit 1
+    fi
 fi
 SEOF
 chmod 755 "$MOD5/service.sh"
@@ -204,56 +176,48 @@ chmod 755 "$MOD5/system/bin/vst-can"
 
 # --- Module 6: hakirfon Edition Branding ---
 MOD6="$BASE_DIR/06_VST_hakirfon_Edition_SystemProp"
-create_base_module "$MOD6" "vst-hakirfon-branding" "VST hakirfon Edition System Branding" "Spoofs Android Device Model to 'hakirfon', Build ID to 'hakirfon Alpha3.1-Hotfix - Valentin Stars' and applies performance tweaks."
+create_base_module "$MOD6" "vst-hakirfon-branding" "VST hakirfon Edition" "Sets the displayed hakirfon Alpha5 build name."
 cat << 'PEOF' > "$MOD6/system.prop"
-ro.product.model=hakirfon
-ro.product.brand=hakirfon
-ro.product.name=hakirfon
-ro.product.device=a51
-ro.product.manufacturer=ValentinStars
-ro.build.display.id=hakirfon Alpha3.1-Hotfix - Valentin Stars
-ro.build.id=hakirfon-Alpha3.1-Hotfix
-ro.system.build.id=hakirfon-Alpha3.1-Hotfix
-ro.build.version.incremental=hakirfon.Alpha3.1.Hotfix
-ro.vendor.build.id=hakirfon-Alpha3.1-Hotfix
-ro.boot.hardware=hakirfon
+ro.build.display.id=hakirfon Alpha5 - Valentin Stars
 PEOF
 
 # --- Module 7: USB OTG Power Switcher ---
 MOD7="$BASE_DIR/07_VST_USB_OTG_Power_Switcher"
-create_base_module "$MOD7" "vst-otg-power" "VST USB OTG High Current Switcher" "Provides 'vst-otg' CLI tool to switch OTG output current between 900mA (eco) and 1.5A - 2.0A (high power boost for Alfa/HackRF)."
+create_base_module "$MOD7" "vst-otg-power" "VST USB OTG High Current Switcher" "Reports USB OTG state; this hardware interface does not select an output current."
 cat << 'BEOF' > "$MOD7/system/bin/vst-otg"
 #!/system/bin/sh
-echo "=== VST USB OTG Power Switcher (hakirfon) by Valentin Stars ==="
-MODE=${1:-status}
-case "$MODE" in
-    1500|2000|high|max)
-        echo 1 > /sys/class/power_supply/battery/batt_high_current_usb 2>/dev/null
-        echo 131072 > /sys/class/power_supply/battery/charge_otg_control 2>/dev/null
-        echo "[+] OTG Power set to HIGH CURRENT (1.5A - 2.0A Boost for Alfa / HackRF)"
+case "${1:-status}" in
+    status)
+        for node in /sys/class/power_supply/otg/online /sys/class/sec/switch/attached_dev; do
+            [ ! -r "$node" ] || { printf '%s: ' "$node"; cat "$node"; }
+        done
         ;;
-    900|eco|default)
-        echo 0 > /sys/class/power_supply/battery/batt_high_current_usb 2>/dev/null
-        echo 131072 > /sys/class/power_supply/battery/charge_otg_control 2>/dev/null
-        echo "[+] OTG Power set to STANDARD ECO (900mA)"
-        ;;
-    status|*)
-        echo "Usage: vst-otg [high|eco|status]"
-        ONLINE=$(cat /sys/class/power_supply/otg/online 2>/dev/null || echo 0)
-        HIGH=$(cat /sys/class/power_supply/battery/batt_high_current_usb 2>/dev/null || echo 0)
-        VBUS=$(cat /sys/class/sec/switch/vbus_value 2>/dev/null || echo "5000")
-        DEV=$(cat /sys/class/sec/switch/attached_dev 2>/dev/null || echo "None")
-        echo "  - OTG Attached: $DEV (Status: $ONLINE)"
-        echo "  - VBUS Voltage: ${VBUS}mV (5.0V Boost)"
-        if [ "$HIGH" = "1" ]; then
-            echo "  - Power Mode: HIGH CURRENT (1.5A - 2.0A) [ACTIVE]"
-        else
-            echo "  - Power Mode: STANDARD ECO (900mA) [ACTIVE]"
-        fi
+    *)
+        echo 'The A51 exposed controls do not select 900/1500/2000 mA OTG output.' >&2
+        echo 'Usage: vst-otg status' >&2
+        exit 2
         ;;
 esac
 BEOF
 chmod 755 "$MOD7/system/bin/vst-otg"
+
+# Native SD image and terminal sessions.
+MOD0="$BASE_DIR/00_VST_NetHunter_MicroSD_Fix"
+create_base_module "$MOD0" "vst-nethunter-sd-fix" "VST NetHunter SD and terminal fixes" "Serialized native SD mount, configured login shells, correct PTYs and safe unmount."
+cp "$TOPDIR/tools/alpha5/sd-mount.sh" "$MOD0/service.sh"
+cp "$TOPDIR/tools/alpha5/prepare-chroot.sh" "$MOD0/prepare-chroot.sh"
+cp "$TOPDIR/tools/alpha5/bootkali_init.sh" "$MOD0/bootkali_init.sh"
+cp "$TOPDIR/tools/alpha5/sd-customize.sh" "$MOD0/customize.sh"
+cp "$TOPDIR/tools/alpha5/killkali.sh" "$MOD0/system/bin/killkali"
+for alias in nh nethunter kali bootkali vst xakirphone andrax andrax-ng stryker strykeross pentest hack; do
+    cp "$TOPDIR/tools/alpha5/nh.sh" "$MOD0/system/bin/$alias"
+done
+chmod 755 "$MOD0/service.sh" "$MOD0/prepare-chroot.sh" "$MOD0/system/bin/"*
+
+MOD8="$BASE_DIR/08_VST_Alpha5_Runtime"
+create_base_module "$MOD8" "vst-alpha5-runtime" "VST Alpha5 runtime fixes" "Sets hostname VST and disables incompatible Wi-Fi link layer statistics."
+cp "$TOPDIR/tools/alpha5/runtime-service.sh" "$MOD8/service.sh"
+chmod 755 "$MOD8/service.sh"
 
 # --- Package All Modules into ZIPs ---
 for mod in "$BASE_DIR"/*; do

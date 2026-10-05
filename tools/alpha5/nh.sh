@@ -28,6 +28,10 @@ fi
 if [ "$(id -u)" != 0 ]; then
     exec su -c "$vst_command"
 fi
+if [ "$vst_root" = /data/local/nhsystem/kali-arm64 ] && [ -e /data/adb/vst-kali-maintenance ]; then
+    echo 'Kali image is offline for filesystem maintenance' >&2
+    exit 1
+fi
 if [ ! -f "$vst_root/etc/passwd" ]; then
     echo "Chroot is not mounted: $vst_root" >&2
     exit 1

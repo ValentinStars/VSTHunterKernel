@@ -23,6 +23,7 @@ VST_MAKE_ARGS=(O="$VST_BUILD_DIR" ARCH=arm64
     LLVM=1 LLVM_IAS=1)
 
 cd "$VST_TOPDIR"
+(cd firmware && sha256sum -c alpha5-firmware.sha256)
 clang --version | head -n 1
 make "${VST_MAKE_ARGS[@]}" "$VST_DEFCONFIG"
 make -j"$VST_JOB_COUNT" "${VST_MAKE_ARGS[@]}" Image modules

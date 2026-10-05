@@ -2,6 +2,7 @@
 # Mount the Kali image through native external storage. Never fsck a live image.
 set -eu
 vst_root=/data/local/nhsystem/kali-arm64
+[ ! -e /data/adb/vst-kali-maintenance ] || exit 1
 mkdir -p /data/adb/vst-locks
 chmod 700 /data/adb/vst-locks
 if [ "${1:-}" != --locked ]; then
