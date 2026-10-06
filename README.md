@@ -22,7 +22,9 @@ Kernel and firmware authors retain their original credits and licenses.
 issues. [Phone helpers](tools/alpha5/README.md) explain the separate ROM recursion
 workaround and the inspected chroot setup.
 
-Download: [v2.0-Alpha5 prerelease](https://github.com/ValentinStars/VSTHunterKernel/releases/tag/v2.0-Alpha5).
+Download: [v2.0-Alpha5.1 prerelease](https://github.com/ValentinStars/VSTHunterKernel/releases/tag/v2.0-Alpha5.1).
+This hotfix was built locally and boot-tested; see the release for its exact source
+revision and checksums.
 The kernel ZIP, Magisk module bundle and ROM patcher source are separate assets.
 The ROM overlay must be generated locally; it is not included in the kernel ZIP.
 

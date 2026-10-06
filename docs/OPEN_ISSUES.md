@@ -24,7 +24,9 @@ returns -ENODATA for these write-only reads; setters remain supported. This chan
 was compiled and installed from d810c755d. Both reads returned ENODATA after
 reboot; uevent no longer contains arbitrary control values. Root, charging,
 matching slcan, statsd and the persistent recorder passed the reboot check.
-First-unlock application testing remains pending.
+After this reboot, the user confirmed Termux works and TTMod opened on the first
+attempt in about 20 seconds. Slow startup and the previously recorded late native
+crashes remain open; successful launch does not establish long-term stability.
 
 Host storage: offline F2FS repair and a full dry-run recheck passed. A subsequent
 fresh Kali-backup copy failed checksums and zstd decoding. A targeted retry
