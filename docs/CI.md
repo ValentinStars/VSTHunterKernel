@@ -23,3 +23,7 @@ never inputs or outputs of CI. Their local overlays require the owner's files.
 CI proves compilation/packaging, not that a new kernel boots or fixes a phone.
 Automated releases remain prereleases pending device testing. The historical
 Alpha5 session results do not certify later CI binaries.
+
+The repository is public and uses a standard Ubuntu runner.
+[GitHub documents these runner minutes as free for public repositories](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
+Manual triggering still limits unnecessary builds; artifact retention is short.

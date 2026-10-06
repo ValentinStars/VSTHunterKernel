@@ -15,7 +15,7 @@ include ROM/vendor issues as well as kernel code.
 | Wi-Fi LAN | Short transfer test passed after LLS workaround | Prolonged LAN stream with HAL PID/log monitoring; vendor rate-stat ABI remains a workaround |
 | SIM | User confirms network works | Repeated outgoing calls after normal unlock/reboot; correlate RIL/IMS state only if failure returns |
 | Exteragram | Anti-Spoiler disabled; user confirms app works | Long use; inspect plugin/GIL/UI blocking before re-enabling hot-path Python hook |
-| TTMod | Visibility lookup workaround passed five cold starts and first start after reboot | Developer-side SDK36 fix and normal-use regression tests |
+| TTMod | Five cold starts passed, but two later SIGSEGVs remained. Exact ART callsite is mirror::Class::SetStatus; hook initialization/publication needs investigation | Updated developer report; inspect SetClassStatus original callback and ShadowHook initialization on SDK36. Visibility workaround alone is insufficient |
 | Chroot lifecycle | Mount, PTY, status and export checks passed | Busy session handling and real export/restore-on-copy tests; original image removal/install is intentionally not done through directory operations |
 
 New kernel finding: sec_battery advertised two control reads but returned success

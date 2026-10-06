@@ -101,7 +101,8 @@ Its enabled preference was backed up and toggled off as a diagnostic workaround;
 this disables automatic spoiler removal. The user confirmed Exteragram works
 after the next reboot/unlock; long-duration behaviour remains to be checked.
 TikTok reproduced the ART class-linker crash on Alpha5. A separate local
-TTMod overlay then passed five cold starts; see the local overlay section below.
+TTMod overlay passed five cold starts, but later crashed twice (03:30 and 07:10).
+The compatibility investigation remains open; see the local overlay section below.
 
 ## Still to validate
 
@@ -117,7 +118,10 @@ assets.
 The fresh Alpha5 TikTok tombstone reproduced a null call from ART SetupClass.
 The hook address resolves into the installed libttmod.so, which embeds LSPlant.
 The upstream report https://github.com/LSPosed/LSPlant/issues/179 describes the
-optional ClassLinker visibility hook causing this same SDK 36 failure.
+optional ClassLinker visibility hook causing a similar SDK 36 failure.
+Later disassembly of the exact ART build identifies the failing call through
+mirror::Class::SetStatus; skipping the two visibility lookups was insufficient.
+See docs/bugs/TTMOD_ANDROID16.md for the updated developer report.
 
 `patch_tiktok_lib.py` accepts only the exact inspected ARM64 library SHA256
 `45ef87b1038007c9e5692d815500617837d48da17065431cc63a6d1289b5825b`.
@@ -134,4 +138,4 @@ python3 tools/alpha5/patch_tiktok_lib.py /path/to/libttmod.so /path/to/local-fix
 Rollback: disable `vst_tiktok_art_fix` in Magisk and reboot. For immediate removal,
 stop TikTok and unmount its library overlay from a root shell. Re-enabling the
 optional hooks may reproduce the original crash. This workaround requires
-normal-use confirmation and does not establish long-term app stability.
+further repair: normal use reproduced the crash. It is not a complete fix.

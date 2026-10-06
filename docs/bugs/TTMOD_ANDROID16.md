@@ -1,44 +1,46 @@
 # Сообщение разработчику TikTok-мода
 
-Привет. Нашёл воспроизводимый native crash вашей версии TikTok-мода 46.8.3
-(versionCode 2024608030) на Samsung Galaxy A51 SM-A515F / Exynos 9611.
-ROM: Evolution X 16.0, Android 16 / SDK 36, Magisk 30.7.
-Ядро: 4.14.364-NetHunter-VST-Alpha5; падение также было на Alpha4.
+Привет. Дополнение по native crash TTMod 46.8.3 (2024608030): Galaxy A51
+SM-A515F, Evolution X 16 / SDK 36, ARM64, Magisk 30.7. Падение есть на
+Alpha4 и Alpha5 ядре.
 
-Симптом: первый запуск часто падает через 2–3 секунды, повторный иногда проходит.
-Падает AsyncTask #22–25: SIGSEGV / SEGV_MAPERR, PC=0.
-Свежий стек:
+Первый запуск иногда падает через 2–3 секунды, повторный проходит. После
+коротких успешных тестов снова есть tombstones 6 октября в 03:30 и 07:10:
+AsyncTask #21, SIGSEGV / SEGV_MAPERR, PC=0.
 
-```text
-#00 pc 0 <unknown>
-#01 art::ClassLinker::SetupClass(...)+264
-#02 art::ClassLinker::DefineClass(...)+1284
-#03 art::ClassLinker::FindClassInBaseDexClassLoader(...)+1180
-#04 art::ClassLinker::FindClass(...)+988
-```
+libart BuildId: 8964cae12d6877ff90074f58eb578aa4.
+libttmod BuildId: ca73343d3f818c2d7cff60fa663aad076f960208.
+Исходный SHA-256 libttmod:
+45ef87b1038007c9e5692d815500617837d48da17065431cc63a6d1289b5825b.
 
-libart.so BuildId: `8964cae12d6877ff90074f58eb578aa4`.
-В tombstone регистр x17 указывает в `libttmod.so` (offset 0x8866c), а не в
-случайную область; библиотека содержит LSPlant/ShadowHook.
-SHA256 libttmod.so:
-`45ef87b1038007c9e5692d815500617837d48da17065431cc63a6d1289b5825b`.
+Стек: ClassLinker::SetupClass+264 → DefineClass+1284 →
+FindClassInBaseDexClassLoader+1180 → FindClass+988.
+Дизассемблирование именно этого libart уточнило вызов: SetupClass+264
+вызывает через PLT mirror::Class::SetStatus(Handle<Class>, ClassStatus, Thread*):
+_ZN3art6mirror5Class9SetStatusENS_6HandleIS1_EENS_11ClassStatusEPNS_6ThreadE.
+x17 указывает в libttmod+0x8866c: wrapper SetClassStatus.
+В тот же момент главный поток находится в libshadowhook.so+0x15258,
+вызов __strlen. В дампе есть ещё не заполненные поля .bss.
 
-Очень похоже на известную проблему optional ClassLinker visibility hooks на
-Android 16: https://github.com/LSPosed/LSPlant/issues/179.
-В LSPlant эти два lookup находятся в необязательной ветке инициализации:
+Это повод проверить гонку публикации original/backup указателя и синхронизацию
+LSPlant Init с параллельными потоками загрузки классов. Гонка пока гипотеза,
+не окончательно доказанная причина.
 
-```text
-_ZN3art11ClassLinker26VisiblyInitializedCallback29AdjustThreadVisibilityCounterEPNS_6ThreadEl
-_ZN3art11ClassLinker26VisiblyInitializedCallback22MarkVisiblyInitializedEPNS_6ThreadE
-```
+Локальный обход двух optional visibility lookups по LSPlant issue #179 прошёл
+пять холодных запусков и первый запуск после reboot, но длительный тест
+подтвердил, что этого недостаточно. Версия мода не менялась; overlay виден
+в root и zygote namespace. Одного skipping visibility hook для этого случая
+недостаточно.
 
-Для проверки локально отключил только разрешение этих двух символов в точной
-копии библиотеки, не меняя libart.so и APK. После этого прошли пять запусков с
-полной остановкой процесса без новых SIGSEGV; после перезагрузки первый запуск
-тоже прошёл. Длительный тест ещё нужен.
+Можете проверить встроенные версии LSPlant/ShadowHook, обработку ошибки
+hook_func_addr_2, публикацию original до первого вызова хука и совместимость
+SetClassStatus / TrivialHandle с этим ART? Есть полные tombstones 20/21 для
+приватной передачи; публично дампы с данными приложений не выкладываем.
 
-Можете проверить SDK 36-guard для этой optional ветки и совместимость вашей
-встроенной версии LSPlant с текущим ART? Похоже, её стоит пропускать на API 36,
-как описано в issue, либо исправить совместимость хука. У меня есть полный
-свежий tombstone для приватной передачи; в публичный issue полный дамп не
-прикладываю, поскольку в нём есть информация об устройстве/приложениях.
+## Исходники для проверки
+
+- [LSPlant SetClassStatus / Init](https://github.com/LSPosed/LSPlant/blob/master/lsplant/src/main/jni/art/mirror/class.cxx)
+- [Отдельная проблема optional visibility hook](https://github.com/LSPosed/LSPlant/issues/179)
+
+Приведённые адреса получены из локального tombstone и дизассемблирования
+точного libart этой прошивки. Гипотезы требуют проверки на исходниках мода.
