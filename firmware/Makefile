@@ -53,7 +53,7 @@ quiet_cmd_h16tofw  = H16TOFW $@
       cmd_h16tofw  = $(objtree)/$(obj)/ihex2fw -w $< $@
 
 # Prebuilt blobs live in srctree; blobs converted from .ihex live in objtree.
-# An O= build must embed the generated output, not a stale source-tree binary.
+# An O= build must reference those generated outputs in the output directory.
 quiet_cmd_fwbin = MK_FW   $@
       cmd_fwbin = FWNAME="$(patsubst firmware/%.gen.S,%,$@)";		     \
 		  FWSTR="$(subst /,_,$(subst .,_,$(subst -,_,$(patsubst	     \

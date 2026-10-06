@@ -12,7 +12,7 @@ include ROM/vendor issues as well as kernel code.
 | Launcher ANR | One focused-window timeout during the latest boot | Read the saved ANR main-thread stack and correlate first unlock, SystemUI load and stats service |
 | Watchdog / offline charging | Original init fatal flags removed; no certified offline charging test | Preserve pstore before reboot; supervised powered-off charging test with hardware recovery available; correlate blocked process/driver |
 | RAM | Minute MemAvailable/SwapFree plus process RSS, vmstat and pressure snapshots | Compare slopes over repeated workloads; distinguish reclaim/slab growth from a reproducible leak; patch only the confirmed allocation/lifecycle bug |
-| Wi-Fi LAN | Short transfer test passed after LLS workaround | Prolonged LAN stream with HAL PID/log monitoring; vendor rate-stat ABI remains a workaround |
+| Wi-Fi LAN | 1200 MiB TCP stream over 10 minutes passed SHA256; wlan0 stayed connected and Wi-Fi HAL PID stayed unchanged | Repeat real LAN workloads and longer idle transitions; vendor rate-stat ABI remains a workaround |
 | SIM | User confirms network works | Repeated outgoing calls after normal unlock/reboot; correlate RIL/IMS state only if failure returns |
 | Exteragram | Anti-Spoiler disabled; user confirms app works | Long use; inspect plugin/GIL/UI blocking before re-enabling hot-path Python hook |
 | TTMod | Five cold starts passed, but two later SIGSEGVs remained. Exact ART callsite is mirror::Class::SetStatus; hook initialization/publication needs investigation | Updated developer report; inspect SetClassStatus original callback and ShadowHook initialization on SDK36. Visibility workaround alone is insufficient |
