@@ -11,9 +11,12 @@ charging state, available RAM/swap, CPU frequencies, wakefulness, wake-source
 counters, process CPU time/RSS, disk/network/interrupt counters, pressure stats,
 Android batterystats, ANR, kernel messages and recent warnings/errors.
 
-The inspected SM5713 driver reports current readings of zero and computes
-charge_counter from full capacity and SOC. These are not a precise wattmeter or
-hardware coulomb counter. Raw SOC resolution is 0.1%. The report shows true
+The first USB-connected samples returned zero current. During the later
+discharge cycle current readings worked (including negative discharge current).
+The SM5713 driver computes charge_counter from full capacity and SOC. It is not
+a hardware coulomb counter. Current times voltage gives sampled battery power,
+not USB input power or an independent per-app energy measurement.
+Raw SOC resolution is 0.1%. The report shows true
 samples, >=5 minute average SOC rates and measurement limits. Identifying a
 particular app as the cause requires comparing CPU/wakelock deltas and repeating
 the workload, not assigning power from a package name alone.
@@ -50,6 +53,9 @@ needed; do not copy phone logs into the public repository or release assets.
 
 ```sh
 python3 tools/power-audit/report.py /path/to/sessions /path/to/report
+# Optional Android model estimates and package names:
+python3 tools/power-audit/report.py /path/to/sessions /path/to/report \
+  --android-stats /private/batterystats.txt --uid-map /private/uid-packages.txt
 ```
 
 Outputs: HTML report, PNG/SVG plots, measurements.csv, wake-sources.csv and

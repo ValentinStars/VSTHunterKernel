@@ -6,7 +6,7 @@ include ROM/vendor issues as well as kernel code.
 
 | Area | Current evidence | Next check |
 | --- | --- | --- |
-| Battery autonomy | Passive recorder installed; current sensors report zero; charge_counter is derived from SOC | Cable unplugged normal use/idle cycle, then charging cycle; SOC/temperature/wake/CPU comparison, controlled repeats |
+| Battery autonomy | Full cycle collected: current readings work off USB; charge_counter is derived from SOC. TikTok leads observed app CPU and Android model estimates | Compare screen use with quiet idle intervals; check background wake sources and repeat controlled idle tests; keep charge/discharge phases separate |
 | SystemUI NetworkTraffic | Controlled Dozing test: arrows on produced 1278 layout warnings/12s, arrows off 0/12s; restoring arrows reproduced 448/8s | Compact indicator applied: speed remains enabled, arrows hidden. ROM source patch prepared; compile and test it before restoring arrows |
 | stats daemon | APEX contains a disabled init service, but no daemon was running. Starting through `ctl.start statsd` restored binder `stats`; repeated client waits stopped | Runtime hook starts the declared service on the exact EvolutionX 20260221 build only. Check next boot and longer use; investigate why ROM startup omitted it |
 | Launcher ANR | One focused-window timeout during the latest boot | Read the saved ANR main-thread stack and correlate first unlock, SystemUI load and stats service |

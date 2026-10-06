@@ -6,6 +6,7 @@ import datetime as dt
 import html
 import json
 import math
+import re
 import tarfile
 from collections import Counter
 from pathlib import Path
@@ -26,6 +27,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('sessions', type=Path)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--android-stats', type=Path, help='Private dumpsys batterystats text')
+    parser.add_argument('--uid-map', type=Path, help='Private pm list packages -U text')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -39,6 +42,8 @@ def main():
     if not rows:
         parser.error('No complete battery samples found')
     for i, row in enumerate(rows):
+        # Battery terminal power only: positive = discharge, negative = charge.
+        row['battery_power_w_est'] = -number(row['current_ua']) * number(row['voltage_uv']) / 1e12
         row['net_soc_pct_per_h'] = math.nan
         # Derive a >=5 minute average from the same boot; no instantaneous peak claims.
         phase_keys = ('status', 'charging_enabled', 'charging_type',
@@ -61,7 +66,7 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
     times = [dt.datetime.fromtimestamp(number(r['epoch_s']), dt.timezone.utc) for r in rows]
-    fig, axes = plt.subplots(6, 1, figsize=(14, 17), sharex=True, layout='constrained')
+    fig, axes = plt.subplots(7, 1, figsize=(14, 20), sharex=True, layout='constrained')
     series = [
         (0, 'raw_soc_x100', .01, 'Raw SOC (%)', '#2463ab'),
         (0, 'capacity_pct', 1, 'Android capacity (%)', '#69a93a'),
@@ -70,6 +75,7 @@ def main():
         (3, 'temp_deci_c', .1, 'Battery temperature (°C)', '#b73834'),
         (4, 'mem_available_kb', 1/1024, 'Available RAM (MiB)', '#237d72'),
         (5, 'current_ua', .001, 'Driver battery current (mA)', '#444444'),
+        (6, 'battery_power_w_est', 1, 'Battery power estimate (W; +discharge, -charge)', '#b36389'),
     ]
     boots = list(dict.fromkeys(r['boot_id'] for r in rows))
     for axis, key, scale, label, color in series:
@@ -100,6 +106,8 @@ def main():
     if not current_present:
         axes[5].text(.5,.5,'All driver current readings are zero: consumption is NOT zero.',
                      transform=axes[5].transAxes, ha='center', va='center', color='darkred')
+        axes[6].text(.5,.5,'Zero battery current cannot measure device power from external supply.',
+                     transform=axes[6].transAxes, ha='center', va='center', color='darkred')
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%d %H:%M', tz=dt.timezone.utc))
     axes[-1].set_xlabel('UTC; blue shading = external power connected, not necessarily charging')
     fig.suptitle('Galaxy A51 passive battery audit — measured samples and SOC-derived rates')
@@ -171,16 +179,59 @@ def main():
              'top_wakeup_active_ms':wake_totals.most_common(20),
              'top_observed_process_cpu_seconds':cpu_totals.most_common(20),
              'repeated_warning_text_in_snapshots':warning_lines.most_common(30)}
+    model_chart = ''
+    if args.android_stats:
+        text = args.android_stats.read_text(errors='replace').rsplit('Statistics since last charge:', 1)[-1]
+        uid_packages = {}
+        if args.uid_map:
+            for package, uid in re.findall(r'^package:(\S+) uid:(\d+)$', args.uid_map.read_text(), re.M):
+                uid_packages.setdefault(int(uid), []).append(package)
+        estimates = []
+        for uid_label, amount in re.findall(r'^  UID (\S+): ([\d.eE+-]+)', text, re.M):
+            app_uid = re.fullmatch(r'u(\d+)a(\d+)', uid_label)
+            uid = int(app_uid[1])*100000 + 10000 + int(app_uid[2]) if app_uid else int(uid_label) if uid_label.isdigit() else None
+            estimates.append({'uid':uid_label, 'packages':uid_packages.get(uid, []),
+                              'estimated_mah':float(amount)})
+        estimates.sort(key=lambda item:item['estimated_mah'], reverse=True)
+        def stat_line(prefix):
+            match = re.search(r'^  '+re.escape(prefix)+r'([^\n]+)', text, re.M)
+            return match[1].strip() if match else None
+        summary['android_power_model'] = {
+            'scope':'Android statistics since last charge; can differ from recorder start',
+            'start_clock':stat_line('Start clock time:'),
+            'time_on_battery':stat_line('Time on battery:'),
+            'screen_on':stat_line('Screen on:'),
+            'screen_off_discharge':stat_line('Screen off discharge:'),
+            'screen_on_discharge':stat_line('Screen on discharge:'),
+            'estimated_app_drain':estimates,
+            'limits':'Model estimates, including attributed screen/video/audio; not independent app energy measurements. Shared UIDs group several packages.'}
+        if estimates:
+            top = list(reversed(estimates[:10]))
+            labels = [' / '.join(item['packages']) if 0 < len(item['packages']) <= 2
+                      else 'UID '+item['uid']+' (shared)' if len(item['packages']) > 2
+                      else 'UID '+item['uid'] for item in top]
+            fig, axis = plt.subplots(figsize=(13, 6), layout='constrained')
+            axis.barh(labels, [item['estimated_mah'] for item in top], color='#327a96')
+            axis.set_xlabel('Android model estimate (mAh), including attributed screen/media')
+            axis.set_title('Estimated app drain — Android model, not measured app energy')
+            axis.grid(axis='x', alpha=.25)
+            fig.savefig(args.output/'android-app-estimates.png', dpi=160)
+            fig.savefig(args.output/'android-app-estimates.svg')
+            plt.close(fig)
+            model_chart = '<h2>Оценки Android по приложениям</h2><p>Модель включает приписанные приложению экран, видео и звук. Это не отдельный замер его питания.</p><img src="android-app-estimates.svg" alt="Модельные оценки расхода приложений" style="max-width:100%">'
     (args.output/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2,allow_nan=False))
     description='''<h1>Galaxy A51 — статистика батареи</h1>
 <p>Голубой фон: внешний источник подключён. Это не доказывает, что батарея заряжается.</p>
 <p>Темп SOC — среднее за фактический интервал от 5 до 30 минут, а не мгновенные пики мощности.
 Драйвер вычисляет charge_counter из ёмкости и SOC. Нулевой ток не означает нулевой расход.
-Пропуски и перезагрузки не соединяются выдуманными измерениями.</p>
+Пропуски и перезагрузки не соединяются выдуманными измерениями.
+Мощность батареи вычислена из выборок тока и напряжения: это оценка на батарее,
+а не мощность адаптера или точная энергия каждого приложения.</p>
 <p>Wakelock/CPU/ошибки — кандидаты для проверки причин, а не точное распределение ватт по приложениям.
 Снимки logcat перекрываются: частоты строк — повторяемость в снимках, не число уникальных событий.</p>'''
     (args.output/'report.html').write_text('<!doctype html><meta charset="utf-8"><title>A51 battery audit</title>'+description+
         '<img src="battery.svg" alt="Графики батареи" style="max-width:100%">'+
+        model_chart+
         '<h2>Сводка</h2><pre>'+html.escape(json.dumps(summary,ensure_ascii=False,indent=2))+'</pre>')
     print(args.output/'report.html')
 
