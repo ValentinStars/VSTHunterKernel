@@ -43,12 +43,26 @@ powershell-7.6.6-linux-arm64.tar.gz SHA256:
 924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729
 
 Version output, hostname VST, profile load, file write/read and Get-FileHash passed.
-The ordinary interactive PSReadLine test through a headless PTY did not pass:
-the automation did not implement terminal cursor-position replies. Command-mode
-results do not certify every interactive editor feature. No global ICU invariant
-mode or Android runtime replacement was applied.
+A headless PTY initially failed because it did not emulate cursor-position
+replies or the carriage return used by Enter. After adding both, PSReadLine
+input and subsequent command execution worked. However, Ctrl+C did not interrupt
+Start-Sleep within the eight-second gate. This remains open; command-mode passes
+do not establish full interactive signal handling. A final process-group check
+was interrupted when ADB disconnected. No global ICU invariant mode or Android
+runtime replacement was applied.
 
 To undo only this added command, remove the /usr/local/bin/pwsh symlink after
 checking it still points at the recorded installation. Keep the original /opt
 installation and the user's profile. Close running PowerShell sessions before
 removing the added version directory.
+
+## Post-hotfix Wi-Fi and memory
+
+240 MiB TCP over wlan0 passed SHA256 after 215 seconds; Wi-Fi HAL PID6009
+remained unchanged and wlan0 stayed connected. The intended pace was faster
+than the observed transfer. This is not a long-term network guarantee.
+
+SUnreclaim later fell from about 650 MiB to 570 MiB without drop_caches.
+MemAvailable was about 824 MiB at the final snapshot; no new ANR and the same
+system_server PID/boot ID. Large slab and app RSS still warrant longer trend
+analysis, but this test did not establish a monotonic kernel memory leak.
