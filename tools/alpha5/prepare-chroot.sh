@@ -21,7 +21,7 @@ if ! vst_mounted "$vst_root/dev"; then
     mount -t tmpfs -o mode=755,nosuid tmpfs "$vst_root/dev"
 fi
 # Complete partial setup too. All PTYs use Android's existing devpts instance.
-for vst_device in null zero random urandom tty ptmx; do
+for vst_device in null zero random urandom tty; do
     if ! vst_mounted "$vst_root/dev/$vst_device"; then
         [ -e "$vst_root/dev/$vst_device" ] || touch "$vst_root/dev/$vst_device"
         vst_bind "/dev/$vst_device" "$vst_root/dev/$vst_device"
@@ -46,6 +46,16 @@ for vst_fd in fd stdin stdout stderr; do
 done
 mkdir -p "$vst_root/dev/pts" "$vst_root/dev/shm"
 vst_mounted "$vst_root/dev/pts" || vst_bind /dev/pts "$vst_root/dev/pts"
+# A file bind of Android's legacy /dev/ptmx breaks devpts_acquire() on this
+# kernel: it looks for pts relative to the file mount. Open the devpts node.
+if vst_mounted "$vst_root/dev/ptmx"; then
+    umount "$vst_root/dev/ptmx"
+fi
+if [ "$(readlink "$vst_root/dev/ptmx" 2>/dev/null || true)" != pts/ptmx ]; then
+    [ ! -d "$vst_root/dev/ptmx" ] || { echo 'Unexpected ptmx directory' >&2; exit 1; }
+    rm -f "$vst_root/dev/ptmx"
+    ln -s pts/ptmx "$vst_root/dev/ptmx"
+fi
 vst_mounted "$vst_root/dev/shm" || mount -t tmpfs -o mode=1777,nosuid,nodev tmpfs "$vst_root/dev/shm"
 vst_mounted "$vst_root/proc" || mount -t proc proc "$vst_root/proc"
 vst_mounted "$vst_root/sys" || vst_bind /sys "$vst_root/sys"

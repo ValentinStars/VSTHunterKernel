@@ -12,6 +12,7 @@ The terminal helper was then updated separately; no additional kernel flash.
 | Compile and run a C program | Pass | Pass | Compiler not installed |
 | DNS, local TCP echo, Nmap TCP scan of localhost only | Pass | Pass | Pass |
 | Interactive sleep interrupted with Ctrl+C; shell continues | Pass | Pass | Pass |
+| Allocate a new PTY pair and exchange data | Pass after ptmx correction | Pass after ptmx correction | Pass after ptmx correction |
 
 Kali export and unmount both refused while chroot processes were active.
 The image remained mounted. Full export/restore was not attempted on the live
@@ -29,6 +30,20 @@ Explicit programs launched from a terminal, such as nh pwsh, now receive the
 same Magisk controlling PTY as the default login shell. The internal marker is
 placed before program arguments and consumed once. Noninteractive arguments,
 including embedded quotes and spaces, retain their boundaries.
+
+## Creating nested terminals
+
+A new test exposed a separate defect: Python openpty and util-linux script
+could not allocate a PTY. Opening /dev/ptmx failed ENOENT, while opening
+/dev/pts/ptmx succeeded. The former was a single-file bind of Android's legacy
+ptmx device. This kernel's devpts_acquire resolves the associated pts mount
+relative to the opened path; the file bind breaks that lookup.
+
+prepare-chroot now removes only that chroot file bind and makes /dev/ptmx a
+relative symlink to pts/ptmx after binding the shared devpts. No global Android
+device permissions are changed. New PTY allocation and data exchange passed
+in all three roots. Previously passing shell Ctrl+C tests used an existing
+Magisk PTY and therefore did not cover allocation inside the rootfs.
 
 ## Kali PowerShell
 

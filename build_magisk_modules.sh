@@ -204,7 +204,7 @@ chmod 755 "$MOD7/system/bin/vst-otg"
 # Native SD image and terminal sessions.
 MOD0="$BASE_DIR/00_VST_NetHunter_MicroSD_Fix"
 create_base_module "$MOD0" "vst-nethunter-sd-fix" "VST NetHunter SD and terminal fixes" "Serialized native SD mount, configured login shells, correct PTYs and safe unmount."
-sed -i 's/^version=.*/version=v2.0-Alpha5.1-terminal2/; s/^versionCode=.*/versionCode=5012/' "$MOD0/module.prop"
+sed -i 's/^version=.*/version=v2.0-Alpha5.1-terminal3/; s/^versionCode=.*/versionCode=5013/' "$MOD0/module.prop"
 cp "$TOPDIR/tools/alpha5/sd-mount.sh" "$MOD0/service.sh"
 cp "$TOPDIR/tools/alpha5/prepare-chroot.sh" "$MOD0/prepare-chroot.sh"
 cp "$TOPDIR/tools/alpha5/bootkali_init.sh" "$MOD0/bootkali_init.sh"
