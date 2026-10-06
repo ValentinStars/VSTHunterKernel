@@ -52,6 +52,8 @@ quiet_cmd_ihex2fw  = IHEX2FW $@
 quiet_cmd_h16tofw  = H16TOFW $@
       cmd_h16tofw  = $(objtree)/$(obj)/ihex2fw -w $< $@
 
+# Prebuilt blobs live in srctree; blobs converted from .ihex live in objtree.
+# An O= build must embed the generated output, not a stale source-tree binary.
 quiet_cmd_fwbin = MK_FW   $@
       cmd_fwbin = FWNAME="$(patsubst firmware/%.gen.S,%,$@)";		     \
 		  FWSTR="$(subst /,_,$(subst .,_,$(subst -,_,$(patsubst	     \
@@ -63,7 +65,7 @@ quiet_cmd_fwbin = MK_FW   $@
 		  echo "    .section .rodata"				>>$@;\
 		  echo "    .p2align 4"					>>$@;\
 		  echo "_fw_$${FWSTR}_bin:"				>>$@;\
-		  echo "    .incbin \"$(srctree)/$(2)\""		>>$@;\
+		  echo "    .incbin \"$(if $(wildcard $(srctree)/$(2)),$(abspath $(srctree)/$(2)),$(abspath $(objtree)/$(2)))\"" >>$@;\
 		  echo "_fw_end:"					>>$@;\
 		  echo "   .section .rodata.str,\"aMS\",$${PROGBITS},1"	>>$@;\
 		  echo "    .p2align $${ASM_ALIGN}"			>>$@;\
@@ -82,7 +84,7 @@ wordsize_deps := $(wildcard include/config/64bit.h include/config/32bit.h \
 		include/config/ppc32.h include/config/ppc64.h \
 		include/config/superh32.h include/config/superh64.h \
 		include/config/x86_32.h include/config/x86_64.h \
-		firmware/Makefile)
+		$(srctree)/firmware/Makefile)
 
 # We need to use a relative path for the objtree, fwabs points to the source
 # tree where .bin files are not generated

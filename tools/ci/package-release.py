@@ -35,16 +35,18 @@ with zipfile.ZipFile(dest / 'VST-Alpha5-Helpers-Source.zip', 'w', zipfile.ZIP_DE
     z.write(root / 'RELEASE_NOTES_ALPHA5.md', 'RELEASE_NOTES_ALPHA5.md')
 commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
 compiler = subprocess.check_output([os.environ['VST_TOOLCHAIN_DIR'] + '/bin/clang', '--version'], text=True)
+context = 'GitHub Actions' if os.environ.get('GITHUB_ACTIONS') == 'true' else 'local'
 (dest / 'BUILD_INFO.txt').write_text(f'Source commit: {commit}\nKernel: 4.14.364-NetHunter-VST-Alpha5\n'
+    f'Build context: {context}\n'
     'Target: SM-A515F / universal9611\nToolchain archive: neutron-clang-05012024\n'
     'Toolchain SHA256: c0f062a39bc70665f1e69cb6cc5e7fc63e8701b5bdb9b682831e48659ab40b5a\n'
     'Build outputs have not been boot-tested by CI. ROM overlays require local inputs.\n' + compiler)
 files = sorted(f for f in dest.iterdir() if f.is_file() and f.name != 'SHA256SUMS')
 (dest / 'SHA256SUMS').write_text(''.join(hashlib.sha256(f.read_bytes()).hexdigest() + '  ' + f.name + '\n' for f in files))
 notes = root / 'RELEASE_NOTES_ALPHA5.md'
-(build / 'CI_RELEASE_NOTES.md').write_text(f'# Alpha5 CI build\n\nSource: `{commit}`.\n\n'
-    'Built through the manually triggered workflow. Compilation and packaging checks passed; '
-    'this build is a prerelease and has not been boot-tested by the runner. '
+(build / 'CI_RELEASE_NOTES.md').write_text(f'# Alpha5 build\n\nSource: `{commit}`. Build context: {context}.\n\n'
+    'Compilation and packaging checks passed; '
+    'this build is a prerelease. Packaging does not certify a device boot test. '
     'Do not interpret the historical Alpha5 session tests as tests of this particular binary.\n\n'
     'Includes AnyKernel ZIP, raw Image, matching modules, effective config, Magisk bundle, helper sources and SHA256SUMS. '
     'Evolution services.jar and TTMod compatibility overlays are generated locally, not bundled.\n\n' + notes.read_text())

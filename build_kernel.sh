@@ -16,7 +16,7 @@ fi
 export PATH="$VST_COMPILER_DIR/bin:$PATH"
 mkdir -p "$VST_BUILD_DIR"
 VST_MAKE_ARGS=(O="$VST_BUILD_DIR" ARCH=arm64 LOCALVERSION=
-    HOSTCC="clang -fuse-ld=lld" HOSTCXX="clang++ -fuse-ld=lld"
+    HOSTCC=clang HOSTCXX=clang++ HOSTLDFLAGS=-fuse-ld=lld
     CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm
     OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip
     CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-

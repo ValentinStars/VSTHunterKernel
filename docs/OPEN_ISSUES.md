@@ -23,10 +23,17 @@ without assigning val->intval. Live sysfs exposed arbitrary integers. Source now
 returns -ENODATA for these write-only reads; setters remain supported. This change
 is pending compilation/device validation and is not yet in the installed Image.
 
-Host storage blocker: the USB F2FS volume reports inconsistent node blocks.
-Offline filesystem maintenance is needed before making it the sole location of
-private backups. Working tree and compressed Kali backup are currently retained
-on the laptop; verified compression and build-cache removal saved about 13 GiB.
+Host storage: offline F2FS repair and a full dry-run recheck passed. A subsequent
+fresh copy of the Kali backup nevertheless failed content checksums and zstd
+decoding. A targeted retry passed a full reread after file-cache eviction, but
+the initial corruption is unexplained. Laptop originals remain available;
+filesystem consistency alone does not establish reliable backup storage.
+
+Clean-build finding: converted Samsung firmware was generated in the output tree,
+but the assembly wrapper referenced the source tree. Correct the `.incbin` path
+for generated blobs while preserving source paths for prebuilt firmware. This
+was masked by previously generated files; a fresh checkout must compile without
+manually copying ignored `.fw` files into the source tree.
 
 The statsd workaround can be skipped by creating
 `/data/adb/vst-disable-statsd-workaround`. It does not replace the daemon, change

@@ -4,7 +4,9 @@ The root recorder keeps minute samples and compressed system snapshots every ten
 samples or when charging status changes. It does not acquire a wake lock, set
 alarms, wake the display, change charging controls or suppress log messages.
 Deep sleep can delay sampling; graphs use actual times. Collection itself has
-some overhead, recorded as sample_cost_s; deep snapshots cost additional time.
+some overhead; deep snapshots cost additional time. `sample_cost_s` records wall
+time and can include suspend during a sample. It is not recorder CPU time or
+an independent measurement of the recorder's energy use.
 
 Captured: SOC, battery voltage/temperature, current readings, power connections,
 charging state, available RAM/swap, CPU frequencies, wakefulness, wake-source
