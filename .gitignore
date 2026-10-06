@@ -163,3 +163,6 @@ magisk_release_zips/
 !/.github/workflows/
 !/.github/workflows/*.yml
 /verified-alpha5-artifacts/
+
+# Python validation cache
+/tools/**/__pycache__/
