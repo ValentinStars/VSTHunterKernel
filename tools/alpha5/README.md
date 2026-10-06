@@ -139,3 +139,10 @@ Rollback: disable `vst_tiktok_art_fix` in Magisk and reboot. For immediate remov
 stop TikTok and unmount its library overlay from a root shell. Re-enabling the
 optional hooks may reproduce the original crash. This workaround requires
 further repair: normal use reproduced the crash. It is not a complete fix.
+
+## Extended checks after Alpha5.1
+
+[Chroot validation](../../docs/CHROOT_VALIDATION.md) records program execution,
+I/O, local networking, busy-session guards and terminal corrections. PowerShell
+was installed separately inside the inspected Kali image; it is not bundled in
+the Magisk ZIP.

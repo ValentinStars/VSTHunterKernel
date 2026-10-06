@@ -16,7 +16,7 @@ include ROM/vendor issues as well as kernel code.
 | SIM | User confirms network works | Repeated outgoing calls after normal unlock/reboot; correlate RIL/IMS state only if failure returns |
 | Exteragram | Anti-Spoiler disabled; user confirms app works | Long use; inspect plugin/GIL/UI blocking before re-enabling hot-path Python hook |
 | TTMod | Five cold starts passed, but two later SIGSEGVs remained. Exact ART callsite is mirror::Class::SetStatus; hook initialization/publication needs investigation | Updated developer report; inspect SetClassStatus original callback and ShadowHook initialization on SDK36. Visibility workaround alone is insufficient |
-| Chroot lifecycle | Mount, PTY, status and export checks passed | Busy session handling and real export/restore-on-copy tests; original image removal/install is intentionally not done through directory operations |
+| Chroot lifecycle | Program/I/O/local-network checks and busy export/unmount rejection passed for the live setup; default-shell Ctrl+C passed in three roots | Busy session handling and real export/restore-on-copy tests; original image removal/install is intentionally not done through directory operations |
 
 New kernel finding: sec_battery advertised two control reads but returned success
 without assigning val->intval. Live sysfs exposed arbitrary integers. Source now
@@ -46,3 +46,11 @@ The statsd workaround can be skipped by creating
 its UID or silence logging. Live recovery and one reboot startup are verified.
 Aconfig socket services are separate and remain under
 investigation.
+
+New ROM/application finding: an incoming call produced 162 com.android.dialer
+SecurityException crashes when its fallback InCallService tried a phoneCall
+foreground service while Koler held the DIALER role. The user requests keeping
+Koler. Do not disable the system fallback InCallService or bypass Android's
+foreground-service permission checks; investigate fallback selection and fix
+the ROM/Dialer source. The previous SIM registration result does not close this
+separate call-UI defect. No calls were placed automatically.

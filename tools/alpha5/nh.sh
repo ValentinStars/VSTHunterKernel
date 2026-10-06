@@ -21,9 +21,14 @@ vst_command="exec $(vst_quote "$0")"
 for vst_argument do
     vst_command="$vst_command $(vst_quote "$vst_argument")"
 done
-if [ "$#" -eq 0 ] && [ "$vst_pty_ready" = 0 ]; then
-    # Magisk -c can detach from the caller's controlling terminal. Allocate one.
-    exec su -i -c "$vst_command --vst-internal-pty"
+if [ "$vst_pty_ready" = 0 ] && { [ "$#" -eq 0 ] || { [ -t 0 ] && [ -t 1 ]; }; }; then
+    # Include explicitly selected interactive programs, such as nh pwsh.
+    # The internal marker precedes arguments so it is consumed exactly once.
+    vst_pty_command="exec $(vst_quote "$0") --vst-internal-pty"
+    for vst_argument do
+        vst_pty_command="$vst_pty_command $(vst_quote "$vst_argument")"
+    done
+    exec su -i -c "$vst_pty_command"
 fi
 if [ "$(id -u)" != 0 ]; then
     exec su -c "$vst_command"
@@ -51,6 +56,17 @@ vst_prepare=/data/adb/modules/vst-nethunter-sd-fix/prepare-chroot.sh
 vst_chroot=/system/bin/chroot
 [ -x "$vst_chroot" ] || vst_chroot=/data/adb/magisk/busybox
 vst_term=${TERM:-xterm-256color}
+# The laptop may pass a terminal absent from the chroot's terminfo database.
+# Keep supported types; use a known color terminal when lookup fails.
+if [ -x "$vst_root/usr/bin/infocmp" ]; then
+    if ! /system/bin/chroot "$vst_root" /usr/bin/infocmp "$vst_term" >/dev/null 2>&1; then
+        if /system/bin/chroot "$vst_root" /usr/bin/infocmp xterm-256color >/dev/null 2>&1; then
+            vst_term=xterm-256color
+        else
+            vst_term=dumb
+        fi
+    fi
+fi
 if [ "$#" -eq 0 ]; then set -- "$vst_shell" -l; fi
 if [ "$vst_chroot" = /data/adb/magisk/busybox ]; then
     set -- chroot "$vst_root" /usr/bin/env -i HOME=/root USER=root LOGNAME=root SHELL="$vst_shell" TERM="$vst_term" PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "$@"
